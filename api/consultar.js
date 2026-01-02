@@ -3,9 +3,6 @@ export default async function handler(req, res) {
   const AUTH_KEY = process.env.NOMUS_AUTH_KEY;
   const { endpoint, dataInicio, dataFim, pagina = 0 } = req.query;
 
-  if (!endpoint) return res.status(400).json({ error: "Endpoint não informado" });
-
-  // Converte AAAA-MM-DD para DD/MM/AAAA conforme manual Nomus
   const formatarData = (dataISO) => {
     if (!dataISO) return null;
     const [ano, mes, dia] = dataISO.split("-");
@@ -16,17 +13,11 @@ export default async function handler(req, res) {
     const dIni = formatarData(dataInicio);
     const dFim = formatarData(dataFim);
 
-    // Constrói a query exatamente: dataVencimento>=01/01/2026;dataVencimento<=31/01/2026
     let queryParams = "";
     if (dIni && dFim) {
       queryParams = `&query=dataVencimento>=${dIni};dataVencimento<=${dFim}`;
-    } else if (dIni) {
-      queryParams = `&query=dataVencimento>=${dIni}`;
-    } else if (dFim) {
-      queryParams = `&query=dataVencimento<=${dFim}`;
     }
 
-    // URL Final Exata
     const urlFinal = `${BASE_URL}/${endpoint}?pagina=${pagina}${queryParams}`;
 
     const response = await fetch(urlFinal, {
@@ -38,7 +29,12 @@ export default async function handler(req, res) {
     });
 
     const data = await response.json();
-    return res.status(200).json(data);
+    
+    // Adicionamos a URL final no objeto de resposta para o LOG ler
+    return res.status(200).json({
+      content: Array.isArray(data) ? data : (data.content || []),
+      urlGerada: urlFinal // <--- O script.js vai ler isso aqui
+    });
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }

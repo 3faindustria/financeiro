@@ -111,19 +111,7 @@
                 const vPrev = stringParaNumero(item.valorReceber || item.valorPagar);
                 const vReal = stringParaNumero(item.valorRecebido || item.valorPago);
 
-                // Dentro do seu lista.forEach(item => { ... })
-                const tr = document.createElement("tr");
-                
-                // Lógica para verificar atraso
-                const hoje = new Date();
-                const partesVenc = item.dataVencimento.split('/');
-                const dataVenc = new Date(partesVenc[2], partesVenc[1] - 1, partesVenc[0]);
-                const pendente = stringParaNumero(item.valorRecebido || item.valorPago) === 0;
-                
-                if (dataVenc < hoje && pendente) {
-                    tr.style.backgroundColor = "#fff1f0"; // Fundo levemente avermelhado para atrasos
-                    tr.style.color = "#cf1322"; // Texto em vermelho
-                }
+
                 
                 totalPrevisto += vPrev;
                 totalRealizado += vReal;

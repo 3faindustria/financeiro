@@ -21,9 +21,20 @@ function stringParaNumero(str) {
 async function buscarDados() {
     const corpo = document.getElementById("tabela-corpo");
     const tipo = document.getElementById("filtro-tipo").value;
-    const dInicio = document.getElementById("data-inicio").value;
-    const dFim = document.getElementById("data-fim").value;
     
+    // Captura os elementos de data
+    const inputInicio = document.getElementById("data-inicio");
+    const inputFim = document.getElementById("data-fim");
+    
+    // Pega os valores atuais (no formato AAAA-MM-DD)
+    const dInicio = inputInicio ? inputInicio.value : "";
+    const dFim = inputFim ? inputFim.value : "";
+    
+    // Alerta se as datas não forem preenchidas (opcional, mas ajuda a testar)
+    if (!dInicio || !dFim) {
+        logDebug("AVISO: Datas não preenchidas. Consultando sem filtro de período.");
+    }
+
     corpo.innerHTML = '<tr><td colspan="6" style="text-align:center">Buscando no Nomus...</td></tr>';
     logDebug(`Iniciando busca para: ${tipo}`);
 
@@ -33,33 +44,30 @@ async function buscarDados() {
 
     try {
         while (continuaBuscando) {
-            // Monta a URL para o log 
+            // CONSTRUÇÃO DA URL COM PARAMETROS DE DATA
             const url = `/api/consultar?endpoint=${tipo}&dataInicio=${dInicio}&dataFim=${dFim}&pagina=${paginaAtual}`;
+            
+            // Agora o log deve mostrar: /api/consultar?endpoint=...&dataInicio=2025-12-01&dataFim=2025-12-31...
             logDebug(`Consultando URL: ${url}`);
 
             const response = await fetch(url);
-            
-            if (!response.ok) {
-                logDebug(`ERRO na resposta: ${response.status}`);
-                throw new Error(`Erro HTTP: ${response.status}`);
-            }
+            if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
 
             const dados = await response.json();
             const listaDaPagina = Array.isArray(dados) ? dados : (dados.content || []);
             
-            logDebug(`Página ${paginaAtual}: ${listaDaPagina.length} registros encontrados.`);
+            logDebug(`Página ${paginaAtual}: ${listaDaPagina.length} registros recebidos.`);
 
             if (listaDaPagina.length > 0) {
                 todasAsContas = todasAsContas.concat(listaDaPagina);
                 paginaAtual++;
-                // Se retornou menos de 50, é a última página 
                 if (listaDaPagina.length < 50) continuaBuscando = false;
             } else {
                 continuaBuscando = false;
             }
             
-            if (paginaAtual > 20) {
-                logDebug("Limite de segurança de 20 páginas atingido.");
+            if (paginaAtual > 25) {
+                logDebug("Limite de 25 páginas atingido (Segurança).");
                 continuaBuscando = false;
             }
         }
@@ -67,7 +75,7 @@ async function buscarDados() {
         renderizarTabela(todasAsContas, tipo);
 
     } catch (error) {
-        logDebug(`FALHA CRÍTICA: ${error.message}`);
+        logDebug(`FALHA NA CONSULTA: ${error.message}`);
         corpo.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red">Erro: ${error.message}</td></tr>`;
     }
 }

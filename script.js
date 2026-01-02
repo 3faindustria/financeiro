@@ -23,7 +23,7 @@ async function buscarDados() {
     logDebug(`--- Nova Consulta Iniciada ---`);
 
     try {
-        const urlLocal = `/api/consultar?endpoint=${tipo};dataVencimento>=${dInicio};dataVencimento<=${dFim}`;
+        const urlLocal = `/api/consultar?endpoint=${tipo};dInicio>=${dInicio};dFim<=${dFim}`;
         
         const response = await fetch(urlLocal);
         const resultado = await response.json();

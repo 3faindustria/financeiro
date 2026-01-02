@@ -1,31 +1,41 @@
 export default async function handler(req, res) {
-  const BASE_URL = process.env.NOMUS_BASE_URL.replace(/\/$/, ""); 
   const AUTH_KEY = process.env.NOMUS_AUTH_KEY;
+  
+  // Lista de caminhos base possíveis para o Nomus
+  const caminhos = [
+    "https://3fa.nomus.com.br/3fa/rest",
+    "https://3fa.nomus.com.br/3fa/api",
+    "https://3fa.nomus.com.br/rest",
+    "https://3fa.nomus.com.br/3fa"
+  ];
 
-  // Forçamos o endpoint padrão para teste de conexão
-  const urlFinal = `${BASE_URL}/contasReceber`;
+  let logTentativas = [];
 
-  try {
-    const response = await fetch(urlFinal, {
-      method: "GET",
-      headers: {
-        "Authorization": AUTH_KEY,
-        "Accept": "application/json"
-      }
-    });
-
-    if (!response.ok) {
-      const detalheErro = await response.text();
-      return res.status(response.status).json({ 
-        error: `Nomus recusou o acesso (${response.status})`,
-        url_tentada: urlFinal,
-        resposta_servidor: detalheErro
+  for (let base of caminhos) {
+    const urlTeste = `${base}/contasReceber`;
+    try {
+      const response = await fetch(urlTeste, {
+        method: "GET",
+        headers: { "Authorization": AUTH_KEY, "Accept": "application/json" }
       });
-    }
 
-    const data = await response.json();
-    return res.status(200).json(data);
-  } catch (error) {
-    return res.status(500).json({ error: "Falha de rede ao tentar alcançar o Nomus." });
+      if (response.status === 200) {
+        const data = await response.json();
+        return res.status(200).json({ 
+            msg: "SUCESSO encontrado!", 
+            url_correta: base, 
+            dados: data 
+        });
+      }
+      logTentativas.push(`${urlTeste} -> Erro ${response.status}`);
+    } catch (e) {
+      logTentativas.push(`${urlTeste} -> Falha de rede`);
+    }
   }
+
+  return res.status(404).json({ 
+    error: "Nenhum caminho funcionou", 
+    detalhes: logTentativas 
+  });
 }
+

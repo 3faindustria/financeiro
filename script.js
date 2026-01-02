@@ -22,10 +22,6 @@ async function buscarDados() {
     const corpo = document.getElementById("tabela-corpo");
     const tipo = document.getElementById("filtro-tipo").value;
 
-    // Dentro da função buscarDados()
-    const url = `/api/consultar?endpoint=${tipo}&dataInicio=${dInicio}&dataFim=${dFim}&pagina=${paginaAtual}`;
-    logDebug(`Enviando para o Proxy Vercel: ${url}`);
-    // O Proxy vai transformar isso na sintaxe: endpoint?query=dataVencimento>=...
     
     // Captura os elementos de data
     const inputInicio = document.getElementById("data-inicio");

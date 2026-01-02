@@ -44,45 +44,7 @@ async function buscarDados() {
     const idsVistos = new Set();
 
     try {
-        while (continuaBuscando) {
-            //const urlLocal = `/api/consultar?endpoint=${tipo};dataVencimento=${dInicio}/dataVencimento=${dFim};pagina=${paginaAtual}`;
-            //const response = await fetch(urlLocal);
-            //const resultado = await response.json();
-            
-            if (resultado.error) {
-                logDebug(`ERRO NO NOMUS: ${resultado.error}`);
-                continuaBuscando = false;
-                break;
-            }
-
-            logDebug(`URL: ${resultado.urlGerada}`);
-
-            const listaDaPagina = resultado.content || [];
-            
-            if (listaDaPagina.length > 0) {
-                listaDaPagina.forEach(item => {
-                    const idUnico = item.id || item.codigo || JSON.stringify(item);
-                    if (!idsVistos.has(idUnico)) {
-                        todasAsContas.push(item);
-                        idsVistos.add(idUnico);
-                    }
-                });
-
-                logDebug(`Página ${paginaAtual}: +${listaDaPagina.length} itens.`);
-                
-                // Se veio 50, pode ter mais na próxima página
-                if (listaDaPagina.length === 50) {
-                    paginaAtual++;
-                } else {
-                    continuaBuscando = false;
-                }
-            } else {
-                logDebug(`Página ${paginaAtual} veio vazia. Encerrando.`);
-                continuaBuscando = false;
-            }
-
-            if (paginaAtual > 20) continuaBuscando = false;
-        }
+ 
 
         dadosGlobais = todasAsContas;
         logDebug(`Total Consolidado: ${dadosGlobais.length} registros.`);

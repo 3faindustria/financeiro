@@ -1,15 +1,12 @@
 function formatarMoeda(valor) {
-    // Garante que o valor exibido seja sempre positivo visualmente se você preferir, 
-    // ou mantenha o sinal se quiser indicar saída de caixa.
+    // Exibe o valor absoluto formatado como Real Brasileiro
     return Math.abs(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
 function stringParaNumero(str) {
     if (typeof str === 'number') return str;
     if (!str || typeof str !== 'string') return 0;
-    
-    // Remove tudo que não é número, vírgula ou o sinal de menos inicial
-    // Isso trata o "-R$ 150,00" transformando em "-150,00"
+    // Remove R$, espaços e pontos, mantendo o sinal de menos e a vírgula decimal
     let limpeza = str.replace(/[^\d,-]/g, '').replace(',', '.');
     return parseFloat(limpeza) || 0;
 }
@@ -34,7 +31,7 @@ async function buscarDados() {
         const dados = await response.json();
         let lista = Array.isArray(dados) ? dados : (dados.content || []);
 
-        // Ordenação
+        // Ordenação por vencimento
         lista.sort((a, b) => {
             const conv = (s) => {
                 const p = (s || "01/01/1900").split('/');
@@ -49,11 +46,9 @@ async function buscarDados() {
         hoje.setHours(0, 0, 0, 0);
 
         lista.forEach(item => {
-            // Pegamos o valor absoluto para o cálculo de saldo não bugar com sinais negativos 
+            // Tratamento de valores negativos (Contas a Pagar) 
             const vPrev = Math.abs(stringParaNumero(item.valorReceber || item.valorPagar));
             const vReal = Math.abs(stringParaNumero(item.valorRecebido || item.valorPago));
-            
-            // O saldo é o que falta pagar ou receber
             const vSaldo = vPrev - vReal;
 
             totalPrevisto += vPrev; 
@@ -62,18 +57,21 @@ async function buscarDados() {
             const partes = (item.dataVencimento || "01/01/1900").split('/');
             const dataVenc = new Date(partes[2], partes[1] - 1, partes[0]);
             
-            // REGRA: Vencido se Data < Hoje E ainda existe saldo significativo 
+            // Regra: Vencido se Data < Hoje E ainda existe saldo [cite: 10, 15]
             const estaVencido = dataVenc < hoje && vSaldo > 0.10;
 
             if (estaVencido) {
                 totalAtrasado += vSaldo;
             }
 
+            // AJUSTE NA CLASSIFICAÇÃO: Tenta pegar o nome/descrição, se não houver, usa o código 
+            const descClassificacao = item.nomeClassificacaoFinanceira || item.nomeClassificacao || item.classificacao;
+
             const tr = document.createElement("tr");
             if (estaVencido) tr.classList.add("linha-vencida");
 
             tr.innerHTML = `
-                <td>${item.classificacao || '-'}</td>
+                <td>${descClassificacao || '-'}</td>
                 <td>${item.nomePessoa || '-'}</td>
                 <td style="font-weight: bold;">
                     ${item.dataVencimento}
@@ -86,13 +84,12 @@ async function buscarDados() {
             corpo.appendChild(tr);
         });
 
-        // Atualiza Resumo (Tratando como Contas a Pagar = Saída/Negativo no Saldo se desejar)
-        const saldoFinal = totalPrevisto - totalRealizado;
+        // Atualização do Resumo [cite: 5, 9]
         document.getElementById("resumo-previsto").innerText = formatarMoeda(totalPrevisto);
         document.getElementById("resumo-realizado").innerText = formatarMoeda(totalRealizado);
         
         const resSaldo = document.getElementById("resumo-saldo");
-        resSaldo.innerText = formatarMoeda(saldoFinal);
+        resSaldo.innerText = formatarMoeda(totalPrevisto - totalRealizado);
         resSaldo.style.color = tipo === "contasReceber" ? "#2e7d32" : "#cf1322";
 
         const resAtrasado = document.getElementById("resumo-atrasado");

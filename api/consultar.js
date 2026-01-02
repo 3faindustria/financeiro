@@ -35,9 +35,10 @@ export default async function handler(req, res) {
     // Retornamos os dados e a URL para o LOG
     return res.status(200).json({
       content: Array.isArray(data) ? data : (data.content || []),
-      urlGerada: urlFinal // <--- Importante para o seu log
+      urlGerada: urlFinal; // <--- Importante para o seu log
     });
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
 }
+

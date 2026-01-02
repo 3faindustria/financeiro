@@ -97,3 +97,9 @@ button:hover {
   font-size: 10px; 
   margin-left: 5px; 
 }
+
+/* Adicione para diferenciar visualmente quando mudar o filtro */
+#resumo-saldo {
+    font-size: 1.4em;
+    font-weight: bold;
+}

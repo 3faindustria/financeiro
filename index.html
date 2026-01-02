@@ -86,20 +86,7 @@
     
             // --- LÓGICA DE ORDENAÇÃO POR VENCIMENTO ---
             // --- LÓGICA DE ORDENAÇÃO CORRIGIDA ---
-            lista.sort((a, b) => {
-                // Função auxiliar para converter "DD/MM/AAAA" em um objeto de Data comparável
-                const converterData = (dataStr) => {
-                    if (!dataStr) return new Date(0); // Coloca itens sem data no fim
-                    const partes = dataStr.split('/');
-                    // Criamos o objeto Data: new Date(ano, mes-1, dia)
-                    return new Date(partes[2], partes[1] - 1, partes[0]);
-                };
-            
-                const dataA = converterData(a.dataVencimento);
-                const dataB = converterData(b.dataVencimento);
-                
-                return dataA - dataB; // Ordem crescente (mais antigo para o mais recente)
-            });
+
             // ------------------------------------------
             // ------------------------------------------
     
@@ -111,7 +98,19 @@
                 const vPrev = stringParaNumero(item.valorReceber || item.valorPagar);
                 const vReal = stringParaNumero(item.valorRecebido || item.valorPago);
 
-
+                // Dentro do seu lista.forEach(item => { ... })
+                const tr = document.createElement("tr");
+                
+                // Lógica para verificar atraso
+                const hoje = new Date();
+                const partesVenc = item.dataVencimento.split('/');
+                const dataVenc = new Date(partesVenc[2], partesVenc[1] - 1, partesVenc[0]);
+                const pendente = stringParaNumero(item.valorRecebido || item.valorPago) === 0;
+                
+                if (dataVenc < hoje && pendente) {
+                    tr.style.backgroundColor = "#fff1f0"; // Fundo levemente avermelhado para atrasos
+                    tr.style.color = "#cf1322"; // Texto em vermelho
+                }
                 
                 totalPrevisto += vPrev;
                 totalRealizado += vReal;

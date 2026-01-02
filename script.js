@@ -33,30 +33,42 @@ async function buscarDados() {
         hoje.setHours(0,0,0,0);
 
         lista.forEach(item => {
-            const vPrev = stringParaNumero(item.valorReceber || item.valorPagar);
-            const vReal = stringParaNumero(item.valorRecebido || item.valorPago);
-            totalPrevisto += vPrev; totalRealizado += vReal;
+    // 1. Identifica os valores independente do endpoint (Receber ou Pagar)
+    const vPrev = stringParaNumero(item.valorReceber || item.valorPagar);
+    const vReal = stringParaNumero(item.valorRecebido || item.valorPago);
+    const vSaldo = stringParaNumero(item.saldoReceber || item.saldoPagar || "0");
 
-            const partes = item.dataVencimento.split('/');
-            const dataVenc = new Date(partes[2], partes[1] - 1, partes[0]);
-            const estaVencido = dataVenc < hoje && vReal < vPrev;
+    totalPrevisto += vPrev; 
+    totalRealizado += vReal;
 
-            const tr = document.createElement("tr");
-            if (estaVencido) tr.classList.add("linha-vencida");
+    // 2. Trata a Data
+    const partes = item.dataVencimento.split('/');
+    const dataVenc = new Date(partes[2], partes[1] - 1, partes[0]);
+    const hoje = new Date();
+    hoje.setHours(0,0,0,0);
 
-            tr.innerHTML = `
-                <td>${item.classificacao || '-'}</td>
-                <td>${item.nomePessoa || '-'}</td>
-                <td style="font-weight: bold;">
-                    ${item.dataVencimento}
-                    ${estaVencido ? '<span class="atraso-badge">VENCIDO</span>' : ''}
-                </td>
-                <td>${item.descricaoLancamento || '-'}</td>
-                <td>${formatarMoeda(vPrev)}</td>
-                <td>${formatarMoeda(vReal)}</td>
-            `;
-            corpo.appendChild(tr);
-        });
+    // 3. REGRA DE DESTAQUE CORRIGIDA:
+    // Só destaca se: (Data Vencimento < Hoje) E (Ainda houver saldo a pagar/receber)
+    const estaVencido = dataVenc < hoje && vSaldo > 0.05; 
+
+    const tr = document.createElement("tr");
+    if (estaVencido) {
+        tr.classList.add("linha-vencida");
+    }
+
+    tr.innerHTML = `
+        <td>${item.classificacao || '-'}</td>
+        <td>${item.nomePessoa || '-'}</td>
+        <td style="font-weight: bold;">
+            ${item.dataVencimento}
+            ${estaVencido ? '<span class="atraso-badge">VENCIDO</span>' : ''}
+        </td>
+        <td>${item.descricaoLancamento || '-'}</td>
+        <td>${formatarMoeda(vPrev)}</td>
+        <td>${formatarMoeda(vReal)}</td>
+    `;
+    corpo.appendChild(tr);
+});
 
         document.getElementById("resumo-previsto").innerText = formatarMoeda(totalPrevisto);
         document.getElementById("resumo-realizado").innerText = formatarMoeda(totalRealizado);

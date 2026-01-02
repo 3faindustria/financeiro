@@ -45,7 +45,7 @@ async function buscarDados() {
 
     try {
         while (continuaBuscando) {
-            const urlLocal = `/api/consultar?endpoint=${tipo}&dataInicio=${dInicio}&dataFim=${dFim}&pagina=${paginaAtual}`;
+            const urlLocal = `/api/consultar?endpoint=${tipo};dataVencimento=${dInicio}/dataVencimento=${dFim};pagina=${paginaAtual}`;
             const response = await fetch(urlLocal);
             const resultado = await response.json();
             

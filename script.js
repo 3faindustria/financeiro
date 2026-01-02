@@ -14,74 +14,88 @@ function stringParaNumero(str) {
 async function buscarDados() {
     const corpo = document.getElementById("tabela-corpo");
     const tipo = document.getElementById("filtro-tipo").value;
-    const dataInicio = document.getElementById("data-inicio").value; // Formato AAAA-MM-DD nativo
-    const dataFim = document.getElementById("data-fim").value;     // Formato AAAA-MM-DD nativo
+    const dInicio = document.getElementById("data-inicio").value;
+    const dFim = document.getElementById("data-fim").value;
     
-    corpo.innerHTML = '<tr><td colspan="6" style="text-align:center">Buscando no Nomus...</td></tr>';
+    corpo.innerHTML = '<tr><td colspan="6" style="text-align:center">Buscando todas as páginas no Nomus...</td></tr>';
+
+    let todasAsContas = [];
+    let paginaAtual = 0;
+    let continuaBuscando = true;
 
     try {
-        // Envia os parâmetros para o nosso servidor na Vercel [cite: 1, 10, 16]
-        const url = `/api/consultar?endpoint=${tipo}&dataInicio=${dataInicio}&dataFim=${dataFim}`;
-        const response = await fetch(url);
-        const dados = await response.json();
-        
-        let lista = Array.isArray(dados) ? dados : (dados.content || []);
+        // Loop para vencer o limite de 50 registros 
+        while (continuaBuscando) {
+            const url = `/api/consultar?endpoint=${tipo}&dataInicio=${dInicio}&dataFim=${dFim}&pagina=${paginaAtual}`;
+            const response = await fetch(url);
+            const dados = await response.json();
+            
+            const listaDaPagina = Array.isArray(dados) ? dados : (dados.content || []);
+            
+            if (listaDaPagina.length > 0) {
+                todasAsContas = todasAsContas.concat(listaDaPagina);
+                paginaAtual++;
+                // Se retornou menos de 50, é a última página 
+                if (listaDaPagina.length < 50) continuaBuscando = false;
+            } else {
+                continuaBuscando = false;
+            }
+            
+            // Segurança para não entrar em loop infinito
+            if (paginaAtual > 20) continuaBuscando = false; 
+        }
 
-        // Reutilizamos sua lógica de ordenação e limpeza de valores
-        lista.sort((a, b) => {
-            const conv = (s) => {
-                const p = (s || "01/01/1900").split('/');
-                return new Date(p[2], p[1]-1, p[0]);
-            };
-            return conv(a.dataVencimento) - conv(b.dataVencimento);
-        });
-
-        let totalPrevisto = 0, totalRealizado = 0, totalAtrasado = 0;
-        corpo.innerHTML = "";
-        const hoje = new Date();
-        hoje.setHours(0,0,0,0);
-
-        lista.forEach(item => {
-            const vPrev = Math.abs(stringParaNumero(item.valorReceber || item.valorPagar));
-            const vReal = Math.abs(stringParaNumero(item.valorRecebido || item.valorPago));
-            const vSaldo = vPrev - vReal;
-
-            totalPrevisto += vPrev; 
-            totalRealizado += vReal;
-
-            const partes = (item.dataVencimento || "01/01/1900").split('/');
-            const dataVenc = new Date(partes[2], partes[1] - 1, partes[0]);
-            const estaVencido = dataVenc < hoje && vSaldo > 0.10;
-
-            if (estaVencido) totalAtrasado += vSaldo;
-
-            // Busca o nome amigável da classificação
-            const descClassificacao = item.nomeClassificacaoFinanceira || item.nomeClassificacao || item.classificacao;
-
-            const tr = document.createElement("tr");
-            if (estaVencido) tr.classList.add("linha-vencida");
-
-            tr.innerHTML = `
-                <td>${descClassificacao || '-'}</td>
-                <td>${item.nomePessoa || '-'}</td>
-                <td style="font-weight: bold;">
-                    ${item.dataVencimento}
-                    ${estaVencido ? '<span class="atraso-badge">VENCIDO</span>' : ''}
-                </td>
-                <td>${item.descricaoLancamento || '-'}</td>
-                <td>${formatarMoeda(vPrev)}</td>
-                <td>${formatarMoeda(vReal)}</td>
-            `;
-            corpo.appendChild(tr);
-        });
-
-        // Atualização do Dashboard [cite: 5, 6, 7, 8, 9]
-        document.getElementById("resumo-previsto").innerText = formatarMoeda(totalPrevisto);
-        document.getElementById("resumo-realizado").innerText = formatarMoeda(totalRealizado);
-        document.getElementById("resumo-saldo").innerText = formatarMoeda(totalPrevisto - totalRealizado);
-        document.getElementById("resumo-atrasado").innerText = formatarMoeda(totalAtrasado);
+        renderizarTabela(todasAsContas, tipo);
 
     } catch (error) {
         corpo.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red">Erro: ${error.message}</td></tr>`;
     }
+}
+
+function renderizarTabela(lista, tipo) {
+    const corpo = document.getElementById("tabela-corpo");
+    corpo.innerHTML = "";
+    
+    // Ordenação por data 
+    lista.sort((a, b) => {
+        const c = (s) => { const p = (s || "01/01/1900").split('/'); return new Date(p[2], p[1]-1, p[0]); };
+        return c(a.dataVencimento) - c(b.dataVencimento);
+    });
+
+    let tPrev = 0, tReal = 0, tAtrasado = 0;
+    const hoje = new Date();
+    hoje.setHours(0,0,0,0);
+
+    lista.forEach(item => {
+        // Tratamento de valores negativos do Contas a Pagar [cite: 10, 12]
+        const vP = Math.abs(stringParaNumero(item.valorReceber || item.valorPagar));
+        const vR = Math.abs(stringParaNumero(item.valorRecebido || item.valorPago));
+        const vSaldo = vP - vR;
+
+        tPrev += vP; tReal += vR;
+
+        const pD = (item.dataVencimento || "01/01/1900").split('/');
+        const dVenc = new Date(pD[2], pD[1]-1, pD[0]);
+        const vencido = dVenc < hoje && vSaldo > 0.10;
+
+        if (vencido) tAtrasado += vSaldo;
+
+        const tr = document.createElement("tr");
+        if (vencido) tr.classList.add("linha-vencida");
+
+        tr.innerHTML = `
+            <td>${item.nomeClassificacaoFinanceira || item.classificacao || '-'}</td>
+            <td>${item.nomePessoa || '-'}</td>
+            <td style="font-weight:bold">${item.dataVencimento} ${vencido ? '<span class="atraso-badge">VENCIDO</span>' : ''}</td>
+            <td>${item.descricaoLancamento || '-'}</td>
+            <td>${formatarMoeda(vP)}</td>
+            <td>${formatarMoeda(vR)}</td>
+        `;
+        corpo.appendChild(tr);
+    });
+
+    document.getElementById("resumo-previsto").innerText = formatarMoeda(tPrev);
+    document.getElementById("resumo-realizado").innerText = formatarMoeda(tReal);
+    document.getElementById("resumo-saldo").innerText = formatarMoeda(tPrev - tReal);
+    document.getElementById("resumo-atrasado").innerText = formatarMoeda(tAtrasado);
 }

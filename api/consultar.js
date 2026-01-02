@@ -25,7 +25,7 @@ export default async function handler(req, res) {
     if (queryStr) urlFinal += `query=${queryStr}`;
     //urlFinal += `;pagina=${pagina}`;
 
-    urlFinal = `https://3fa.nomus/3fa/rest/contasPagar?query=dataVencimento>=01/01/2026;dataVencimento<=31/01/2026`;
+    urlFinal = `https://3fa.nomus.com.br/3fa/rest/contasPagar?query=dataVencimento>=01/01/2026;dataVencimento<=31/01/2026`;
 
     const response = await fetch(urlFinal, {
       method: "GET",
@@ -51,6 +51,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: error.message });
   }
 }
+
 
 
 

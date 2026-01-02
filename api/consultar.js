@@ -7,7 +7,7 @@ export default async function handler(req, res) {
 
   const formatarParaNomus = (dataISO) => {
     if (!dataISO) return null;
-    const [ano, mes, dia] = dataISO.split("-");
+    const [ano, mes, dia] = dataISO.split("/");
     return `${dia}/${mes}/${ano}`;
   };
 
@@ -41,3 +41,4 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: error.message });
   }
 }
+

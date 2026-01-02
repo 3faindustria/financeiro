@@ -5,27 +5,29 @@ export default async function handler(req, res) {
 
   if (!endpoint) return res.status(400).json({ error: "Endpoint não informado" });
 
-  const formatarParaNomus = (dataISO) => {
+  // Converte AAAA-MM-DD para DD/MM/AAAA conforme manual Nomus
+  const formatarData = (dataISO) => {
     if (!dataISO) return null;
     const [ano, mes, dia] = dataISO.split("-");
     return `${dia}/${mes}/${ano}`;
   };
 
   try {
-    const dIni = formatarParaNomus(dataInicio);
-    const dFim = formatarParaNomus(dataFim);
+    const dIni = formatarData(dataInicio);
+    const dFim = formatarData(dataFim);
 
-    let queryStr = "";
+    // Constrói a query exatamente: dataVencimento>=01/01/2026;dataVencimento<=31/01/2026
+    let queryParams = "";
     if (dIni && dFim) {
-      queryStr = `dataVencimento>=${dIni};dataVencimento<=${dFim}`;
+      queryParams = `&query=dataVencimento>=${dIni};dataVencimento<=${dFim}`;
     } else if (dIni) {
-      queryStr = `dataVencimento>=${dIni}`;
+      queryParams = `&query=dataVencimento>=${dIni}`;
     } else if (dFim) {
-      queryStr = `dataVencimento<=${dFim}`;
+      queryParams = `&query=dataVencimento<=${dFim}`;
     }
 
-    // O segredo: encodeURIComponent transforma os símbolos em códigos que a URL aceita (ex: ; vira %3B)
-    const urlFinal =  `https://3fa.nomus.com.br/3fa/rest/contasPagar?query=dataVencimento>=01/01/2026;dataVencimento<=31/01/2026`; // `${BASE_URL}/${endpoint}?pagina=${pagina}${queryStr ? `&query=${encodeURIComponent(queryStr)}` : ""}`;
+    // URL Final Exata
+    const urlFinal = `${BASE_URL}/${endpoint}?pagina=${pagina}${queryParams}`;
 
     const response = await fetch(urlFinal, {
       method: "GET",
@@ -41,10 +43,3 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: error.message });
   }
 }
-
-
-
-
-
-
-

@@ -18,7 +18,8 @@ export default async function handler(req, res) {
       queryParams = `&query=dataVencimento>=${dIni};dataVencimento<=${dFim}`;
     }
 
-    const urlFinal = `${BASE_URL}/${endpoint}?${queryParams}`;
+    // A URL agora inclui a página e a query juntas
+    const urlFinal = `${BASE_URL}/${endpoint}?pagina=${pagina}${queryParams}`;
 
     const response = await fetch(urlFinal, {
       method: "GET",
@@ -30,13 +31,13 @@ export default async function handler(req, res) {
 
     const data = await response.json();
     
-    // Adicionamos a URL final no objeto de resposta para o LOG ler
     return res.status(200).json({
       content: Array.isArray(data) ? data : (data.content || []),
-      urlGerada: urlFinal // <--- O script.js vai ler isso aqui
+      urlGerada: urlFinal
     });
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
 }
+
 

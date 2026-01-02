@@ -6,17 +6,20 @@ export default async function handler(req, res) {
   if (!endpoint) return res.status(400).json({ error: "Endpoint não informado" });
 
   try {
-    // Constrói a query de data seguindo o manual: campo>=valor;campo<=valor 
-    let queryParams = "";
+    // MONTAGEM DA SINTAXE NOMUS: query=dataVencimento>=AAAA-MM-DD;dataVencimento<=AAAA-MM-DD
+    let filtroQuery = "";
     if (dataInicio && dataFim) {
-      queryParams = `&query=dataVencimento>=${dataInicio};dataVencimento<=${dataFim}`;
+      filtroQuery = `&query=dataVencimento>=${dataInicio};dataVencimento<=${dataFim}`;
     } else if (dataInicio) {
-      queryParams = `&query=dataVencimento>=${dataInicio}`;
+      filtroQuery = `&query=dataVencimento>=${dataInicio}`;
     } else if (dataFim) {
-      queryParams = `&query=dataVencimento<=${dataFim}`;
+      filtroQuery = `&query=dataVencimento<=${dataFim}`;
     }
 
-    const response = await fetch(`${BASE_URL}/${endpoint}?pagina=${pagina}${queryParams}`, {
+    // A URL final enviada ao Nomus será: .../contasReceber?pagina=0&query=...
+    const urlFinal = `${BASE_URL}/${endpoint}?pagina=${pagina}${filtroQuery}`;
+
+    const response = await fetch(urlFinal, {
       method: "GET",
       headers: {
         "Authorization": AUTH_KEY,

@@ -25,7 +25,7 @@ export default async function handler(req, res) {
     }
 
     // O segredo: encodeURIComponent transforma os símbolos em códigos que a URL aceita (ex: ; vira %3B)
-    const urlFinal =  `https://3fa.nomus.com.br/3fa/rest/contasReceber`; // `${BASE_URL}/${endpoint}?pagina=${pagina}${queryStr ? `&query=${encodeURIComponent(queryStr)}` : ""}`;
+    const urlFinal =  `https://3fa.nomus.com.br/3fa/rest/contasReceber?query=dataVenvimento>=01/01/2026;dataVencimento<=31/01/2026`; // `${BASE_URL}/${endpoint}?pagina=${pagina}${queryStr ? `&query=${encodeURIComponent(queryStr)}` : ""}`;
 
     const response = await fetch(urlFinal, {
       method: "GET",
@@ -41,6 +41,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: error.message });
   }
 }
+
 
 
 

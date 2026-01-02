@@ -5,7 +5,6 @@ export default async function handler(req, res) {
 
   if (!endpoint) return res.status(400).json({ error: "Endpoint não informado" });
 
-  // Função interna para converter AAAA-MM-DD para DD/MM/AAAA
   const formatarParaNomus = (dataISO) => {
     if (!dataISO) return null;
     const [ano, mes, dia] = dataISO.split("-");
@@ -13,20 +12,20 @@ export default async function handler(req, res) {
   };
 
   try {
-    const dIniFormatada = formatarParaNomus(dataInicio);
-    const dFimFormatada = formatarParaNomus(dataFim);
+    const dIni = formatarParaNomus(dataInicio);
+    const dFim = formatarParaNomus(dataFim);
 
-    // MONTAGEM DA SINTAXE NOMUS (dd/mm/aaaa)
-    let filtroQuery = "";
-    if (dIniFormatada && dFimFormatada) {
-      filtroQuery = `&query=dataVencimento>=${dIniFormatada};dataVencimento<=${dFimFormatada}`;
-    } else if (dIniFormatada) {
-      filtroQuery = `&query=dataVencimento>=${dIniFormatada}`;
-    } else if (dFimFormatada) {
-      filtroQuery = `&query=dataVencimento<=${dFimFormatada}`;
+    let queryStr = "";
+    if (dIni && dFim) {
+      queryStr = `dataVencimento>=${dIni};dataVencimento<=${dFim}`;
+    } else if (dIni) {
+      queryStr = `dataVencimento>=${dIni}`;
+    } else if (dFim) {
+      queryStr = `dataVencimento<=${dFim}`;
     }
 
-    const urlFinal = `${BASE_URL}/${endpoint}?pagina=${pagina}${filtroQuery}`;
+    // O segredo: encodeURIComponent transforma os símbolos em códigos que a URL aceita (ex: ; vira %3B)
+    const urlFinal = `${BASE_URL}/${endpoint}?pagina=${pagina}${queryStr ? `&query=${encodeURIComponent(queryStr)}` : ""}`;
 
     const response = await fetch(urlFinal, {
       method: "GET",

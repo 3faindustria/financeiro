@@ -31,25 +31,38 @@ async function buscarDados() {
     corpo.innerHTML = '<tr><td colspan="6" style="text-align:center">Consultando Nomus...</td></tr>';
     logDebug(`--- Iniciando Consulta: ${tipo} ---`);
 
+    // ... dentro da função buscarDados ...
+
     try {
-        // Chamada para o servidor local (Vercel)
         const urlLocal = `/api/consultar?endpoint=${tipo}&dataInicio=${dInicio}&dataFim=${dFim}`;
-        
         const response = await fetch(urlLocal);
         const resultado = await response.json();
         
-        // Exibe a URL que funcionou no seu teste
         if (resultado.urlGerada) {
             logDebug(`URL NOMUS: ${resultado.urlGerada}`);
         }
 
-        const lista = resultado.content || [];
-        logDebug(`Sucesso: ${lista.length} registros encontrados.`);
+        // Obtém a lista bruta
+        let listaBruta = resultado.content || [];
+        
+        // FILTRO DE DUPLICADOS: Usa o ID do lançamento para garantir que é único
+        const idsVistos = new Set();
+        const listaUnica = listaBruta.filter(item => {
+            // O Nomus costuma enviar 'id' ou 'codigo'. Vamos usar o que estiver disponível.
+            const idUnico = item.id || item.codigo || JSON.stringify(item); 
+            if (idsVistos.has(idUnico)) {
+                return false; // Já existe, descarta
+            }
+            idsVistos.add(idUnico);
+            return true; // É novo, mantém
+        });
 
-        if (lista.length === 0) {
-            corpo.innerHTML = '<tr><td colspan="6" style="text-align:center">Nenhum dado encontrado para o período.</td></tr>';
+        logDebug(`Registros brutos: ${listaBruta.length} | Após remover duplicados: ${listaUnica.length}`);
+
+        if (listaUnica.length === 0) {
+            corpo.innerHTML = '<tr><td colspan="6" style="text-align:center">Nenhum dado encontrado.</td></tr>';
         } else {
-            renderizarTabela(lista, tipo);
+            renderizarTabela(listaUnica, tipo);
         }
 
     } catch (error) {

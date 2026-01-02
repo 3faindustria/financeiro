@@ -5,18 +5,27 @@ export default async function handler(req, res) {
 
   if (!endpoint) return res.status(400).json({ error: "Endpoint não informado" });
 
+  // Função interna para converter AAAA-MM-DD para DD/MM/AAAA
+  const formatarParaNomus = (dataISO) => {
+    if (!dataISO) return null;
+    const [ano, mes, dia] = dataISO.split("-");
+    return `${dia}/${mes}/${ano}`;
+  };
+
   try {
-    // MONTAGEM DA SINTAXE NOMUS: query=dataVencimento>=AAAA-MM-DD;dataVencimento<=AAAA-MM-DD
+    const dIniFormatada = formatarParaNomus(dataInicio);
+    const dFimFormatada = formatarParaNomus(dataFim);
+
+    // MONTAGEM DA SINTAXE NOMUS (dd/mm/aaaa)
     let filtroQuery = "";
-    if (dataInicio && dataFim) {
-      filtroQuery = `&query=dataVencimento>=${dataInicio};dataVencimento<=${dataFim}`;
-    } else if (dataInicio) {
-      filtroQuery = `&query=dataVencimento>=${dataInicio}`;
-    } else if (dataFim) {
-      filtroQuery = `&query=dataVencimento<=${dataFim}`;
+    if (dIniFormatada && dFimFormatada) {
+      filtroQuery = `&query=dataVencimento>=${dIniFormatada};dataVencimento<=${dFimFormatada}`;
+    } else if (dIniFormatada) {
+      filtroQuery = `&query=dataVencimento>=${dIniFormatada}`;
+    } else if (dFimFormatada) {
+      filtroQuery = `&query=dataVencimento<=${dFimFormatada}`;
     }
 
-    // A URL final enviada ao Nomus será: .../contasReceber?pagina=0&query=...
     const urlFinal = `${BASE_URL}/${endpoint}?pagina=${pagina}${filtroQuery}`;
 
     const response = await fetch(urlFinal, {

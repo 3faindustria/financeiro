@@ -30,13 +30,18 @@ async function buscarDados() {
     const dInicio = document.getElementById("data-inicio").value;
     const dFim = document.getElementById("data-fim").value;
     
-    corpo.innerHTML = '<tr><td colspan="7" style="text-align:center">Buscando todas as páginas no Nomus...</td></tr>';
-    logDebug(`--- Iniciando Busca Completa ---`);
+    if(!dInicio || !dFim) {
+        alert("Por favor, selecione as datas de início e fim.");
+        return;
+    }
+
+    corpo.innerHTML = '<tr><td colspan="7" style="text-align:center">Buscando dados no Nomus...</td></tr>';
+    logDebug(`--- Iniciando Busca ---`);
 
     let todasAsContas = [];
     let paginaAtual = 0;
     let continuaBuscando = true;
-    const idsVistos = new Set(); // Para evitar as repetições que você mencionou
+    const idsVistos = new Set();
 
     try {
         while (continuaBuscando) {
@@ -44,14 +49,17 @@ async function buscarDados() {
             const response = await fetch(urlLocal);
             const resultado = await response.json();
             
-            if (resultado.urlGerada) {
-                logDebug(`Lendo: ${resultado.urlGerada}`);
+            if (resultado.error) {
+                logDebug(`ERRO NO NOMUS: ${resultado.error}`);
+                continuaBuscando = false;
+                break;
             }
+
+            logDebug(`URL: ${resultado.urlGerada}`);
 
             const listaDaPagina = resultado.content || [];
             
             if (listaDaPagina.length > 0) {
-                // Filtra duplicados antes de adicionar ao bolo total
                 listaDaPagina.forEach(item => {
                     const idUnico = item.id || item.codigo || JSON.stringify(item);
                     if (!idsVistos.has(idUnico)) {
@@ -60,31 +68,31 @@ async function buscarDados() {
                     }
                 });
 
-                logDebug(`Página ${paginaAtual}: +${listaDaPagina.length} itens encontrados.`);
+                logDebug(`Página ${paginaAtual}: +${listaDaPagina.length} itens.`);
                 
-                // Se a página veio com menos de 50, significa que é a última
-                if (listaDaPagina.length < 50) {
-                    continuaBuscando = false;
-                } else {
+                // Se veio 50, pode ter mais na próxima página
+                if (listaDaPagina.length === 50) {
                     paginaAtual++;
+                } else {
+                    continuaBuscando = false;
                 }
             } else {
-                continuaBuscando = false; // Página vazia, encerra o loop
+                logDebug(`Página ${paginaAtual} veio vazia. Encerrando.`);
+                continuaBuscando = false;
             }
 
-            // Trava de segurança para não estourar limite de memória (ex: 40 páginas)
-            if (paginaAtual > 40) continuaBuscando = false;
+            if (paginaAtual > 20) continuaBuscando = false;
         }
 
-        dadosGlobais = todasAsContas; // Salva para os filtros de Classificação/Pessoa
-        logDebug(`Total final consolidado: ${dadosGlobais.length} registros.`);
+        dadosGlobais = todasAsContas;
+        logDebug(`Total Consolidado: ${dadosGlobais.length} registros.`);
         
         preencherFiltrosDinâmicos(dadosGlobais);
         aplicarFiltrosSecundarios();
 
     } catch (error) {
-        logDebug(`ERRO NO LOOP: ${error.message}`);
-        corpo.innerHTML = '<tr><td colspan="7" style="text-align:center; color:red">Erro ao consolidar páginas.</td></tr>';
+        logDebug(`FALHA: ${error.message}`);
+        corpo.innerHTML = '<tr><td colspan="7" style="text-align:center; color:red">Erro na comunicação.</td></tr>';
     }
 }
 

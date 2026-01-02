@@ -24,10 +24,9 @@ async function buscarDados() {
     const dInicio = document.getElementById("data-inicio").value;
     const dFim = document.getElementById("data-fim").value;
     
-    corpo.innerHTML = '<tr><td colspan="6" style="text-align:center">Conectando ao Nomus...</td></tr>';
+    corpo.innerHTML = '<tr><td colspan="6" style="text-align:center">Consultando Nomus...</td></tr>';
     
-    logDebug(`--- Nova Consulta ---`);
-    logDebug(`Filtro: ${tipo} | Período: ${dInicio || 'S/D'} até ${dFim || 'S/D'}`);
+    logDebug(`--- Iniciando Processo ---`);
 
     let todasAsContas = [];
     let paginaAtual = 0;
@@ -35,15 +34,19 @@ async function buscarDados() {
 
     try {
         while (continuaBuscando) {
-            const url = `/api/consultar?endpoint=${tipo}&dataInicio=${dInicio}&dataFim=${dFim}&pagina=${paginaAtual}`;
-            const response = await fetch(url);
+            // URL que chama o seu servidor na Vercel
+            const urlLocal = `/api/consultar?endpoint=${tipo}&dataInicio=${dInicio}&dataFim=${dFim}&pagina=${paginaAtual}`;
             
-            if (!response.ok) throw new Error(`Status ${response.status}`);
+            const response = await fetch(urlLocal);
+            const resultado = await response.json();
+            
+            // EXIBE NO LOG A URL QUE O SERVIDOR MONTOU PARA O NOMUS
+            if (resultado.urlGerada) {
+                logDebug(`URL NOMUS: ${resultado.urlGerada}`);
+            }
 
-            const dados = await response.json();
-            const listaDaPagina = Array.isArray(dados) ? dados : (dados.content || []);
-            
-            logDebug(`Página ${paginaAtual}: ${listaDaPagina.length} itens encontrados.`);
+            const listaDaPagina = resultado.content || [];
+            logDebug(`Sucesso: ${listaDaPagina.length} itens encontrados na pág ${paginaAtual}.`);
 
             if (listaDaPagina.length > 0) {
                 todasAsContas = todasAsContas.concat(listaDaPagina);
@@ -53,18 +56,14 @@ async function buscarDados() {
                 continuaBuscando = false;
             }
             
-            if (paginaAtual > 15) continuaBuscando = false; 
+            if (paginaAtual > 10) continuaBuscando = false; 
         }
 
-        if (todasAsContas.length === 0) {
-            corpo.innerHTML = '<tr><td colspan="6" style="text-align:center">Nenhum dado retornado para este período.</td></tr>';
-        } else {
-            renderizarTabela(todasAsContas, tipo);
-        }
+        renderizarTabela(todasAsContas, tipo);
 
     } catch (error) {
         logDebug(`ERRO: ${error.message}`);
-        corpo.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red">Falha na comunicação.</td></tr>`;
+        corpo.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red">Erro na consulta. Verifique o Log.</td></tr>`;
     }
 }
 

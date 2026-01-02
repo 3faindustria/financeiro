@@ -1,9 +1,7 @@
 export default async function handler(req, res) {
   const BASE_URL = "https://3fa.nomus.com.br/3fa/rest";
   const AUTH_KEY = process.env.NOMUS_AUTH_KEY;
-  const { endpoint, dataInicio, dataFim } = req.query;
-
-  if (!endpoint) return res.status(400).json({ error: "Endpoint não informado" });
+  const { endpoint, dataInicio, dataFim, pagina = 0 } = req.query;
 
   const formatarData = (dataISO) => {
     if (!dataISO) return null;
@@ -17,10 +15,11 @@ export default async function handler(req, res) {
 
     let queryParams = "";
     if (dIni && dFim) {
-      queryParams = `?query=dataVencimento>=${dIni};dataVencimento<=${dFim}`;
+      queryParams = `&query=dataVencimento>=${dIni};dataVencimento<=${dFim}`;
     }
 
-    const urlFinal = `${BASE_URL}/${endpoint}${queryParams}`;
+    // A URL agora inclui a página e a query juntas
+    const urlFinal = `${BASE_URL}/${endpoint}?pagina=${pagina}${queryParams}`;
 
     const response = await fetch(urlFinal, {
       method: "GET",
@@ -32,13 +31,11 @@ export default async function handler(req, res) {
 
     const data = await response.json();
     
-    // Retornamos os dados e a URL para o LOG
     return res.status(200).json({
       content: Array.isArray(data) ? data : (data.content || []),
-      urlGerada: urlFinal; // <--- Importante para o seu log
+      urlGerada: urlFinal
     });
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
 }
-

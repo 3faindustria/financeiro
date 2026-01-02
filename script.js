@@ -21,23 +21,13 @@ function stringParaNumero(str) {
 async function buscarDados() {
     const corpo = document.getElementById("tabela-corpo");
     const tipo = document.getElementById("filtro-tipo").value;
-
+    const dInicio = document.getElementById("data-inicio").value;
+    const dFim = document.getElementById("data-fim").value;
     
-    // Captura os elementos de data
-    const inputInicio = document.getElementById("data-inicio");
-    const inputFim = document.getElementById("data-fim");
+    corpo.innerHTML = '<tr><td colspan="6" style="text-align:center">Conectando ao Nomus...</td></tr>';
     
-    // Pega os valores atuais (no formato AAAA-MM-DD)
-    const dInicio = inputInicio ? inputInicio.value : "";
-    const dFim = inputFim ? inputFim.value : "";
-    
-    // Alerta se as datas não forem preenchidas (opcional, mas ajuda a testar)
-    if (!dInicio || !dFim) {
-        logDebug("AVISO: Datas não preenchidas. Consultando sem filtro de período.");
-    }
-
-    corpo.innerHTML = '<tr><td colspan="6" style="text-align:center">Buscando no Nomus...</td></tr>';
-    logDebug(`Iniciando busca para: ${tipo}`);
+    logDebug(`--- Nova Consulta ---`);
+    logDebug(`Filtro: ${tipo} | Período: ${dInicio || 'S/D'} até ${dFim || 'S/D'}`);
 
     let todasAsContas = [];
     let paginaAtual = 0;
@@ -45,19 +35,15 @@ async function buscarDados() {
 
     try {
         while (continuaBuscando) {
-            // CONSTRUÇÃO DA URL COM PARAMETROS DE DATA
             const url = `/api/consultar?endpoint=${tipo}&dataInicio=${dInicio}&dataFim=${dFim}&pagina=${paginaAtual}`;
-            
-            // Agora o log deve mostrar: /api/consultar?endpoint=...&dataInicio=2025-12-01&dataFim=2025-12-31...
-            logDebug(`Consultando URL: ${url}`);
-
             const response = await fetch(url);
-            if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
+            
+            if (!response.ok) throw new Error(`Status ${response.status}`);
 
             const dados = await response.json();
             const listaDaPagina = Array.isArray(dados) ? dados : (dados.content || []);
             
-            logDebug(`Página ${paginaAtual}: ${listaDaPagina.length} registros recebidos.`);
+            logDebug(`Página ${paginaAtual}: ${listaDaPagina.length} itens encontrados.`);
 
             if (listaDaPagina.length > 0) {
                 todasAsContas = todasAsContas.concat(listaDaPagina);
@@ -67,17 +53,18 @@ async function buscarDados() {
                 continuaBuscando = false;
             }
             
-            if (paginaAtual > 25) {
-                logDebug("Limite de 25 páginas atingido (Segurança).");
-                continuaBuscando = false;
-            }
+            if (paginaAtual > 15) continuaBuscando = false; 
         }
 
-        renderizarTabela(todasAsContas, tipo);
+        if (todasAsContas.length === 0) {
+            corpo.innerHTML = '<tr><td colspan="6" style="text-align:center">Nenhum dado retornado para este período.</td></tr>';
+        } else {
+            renderizarTabela(todasAsContas, tipo);
+        }
 
     } catch (error) {
-        logDebug(`FALHA NA CONSULTA: ${error.message}`);
-        corpo.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red">Erro: ${error.message}</td></tr>`;
+        logDebug(`ERRO: ${error.message}`);
+        corpo.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red">Falha na comunicação.</td></tr>`;
     }
 }
 

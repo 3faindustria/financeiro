@@ -54,32 +54,21 @@
     }
 
     async function consultar() {
-    const tipoSelect = document.getElementById("tipo");
-    const endpointValue = tipoSelect.value; // Pega 'contasReceber' ou 'contasPagar'
+        log("Iniciando teste de conexão direta...");
+        try {
+            const response = await fetch('/api/consultar');
+            const dados = await response.json();
     
-    const params = new URLSearchParams({
-        dataVencimentoDe: document.getElementById("vencimentoDe").value,
-        dataVencimentoAte: document.getElementById("vencimentoAte").value
-        // Se houver outros filtros como 'nomePessoa', adicione aqui
-    }).toString();
-
-    // A URL deve passar o parâmetro 'endpoint' exatamente como o arquivo .js espera
-    const urlLocal = `/api/consultar?endpoint=${endpointValue}&params=${encodeURIComponent(params)}`;
-
-    try {
-        log(`Chamando: ${urlLocal}`);
-        const response = await fetch(urlLocal);
-        const dados = await response.json();
-
-        if (!response.ok) {
-            // Se o erro vier da Nomus, ele mostrará a mensagem que você recebeu
-            throw new Error(dados.error || `Erro ${response.status}`);
+            if (dados.error) {
+                log(`ERRO: ${dados.error}`);
+                console.log("Detalhes:", dados);
+            } else {
+                log("SUCESSO! Conexão estabelecida.");
+                renderizar(dados.content || dados);
+            }
+        } catch (erro) {
+            log("Erro na chamada local.");
         }
-
-        const lista = Array.isArray(dados) ? dados : (dados.content || []);
-        renderizar(lista);
-    } catch (erro) {
-        log(`ERRO: ${erro.message}`);
     }
 }
 

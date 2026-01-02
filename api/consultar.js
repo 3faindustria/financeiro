@@ -1,45 +1,28 @@
 export default async function handler(req, res) {
+  // Puxa as credenciais das variáveis de ambiente da Vercel
+  const BASE_URL = "https://3fa.nomus.com.br/3fa/rest"; 
   const AUTH_KEY = process.env.NOMUS_AUTH_KEY;
-  
-  // Lista de caminhos base possíveis para o Nomus
-  const caminhos = [
-        "https://3fa.nomus.com.br/3fa/rest",
-        "https://3fa.nomus.com.br/3fa/api",
-        "https://3fa.nomus.com.br/rest",
-        "https://3fa.nomus.com.br/3fa"
-  ];
 
-  let logTentativas = [];
-
-  for (let base of caminhos) {
-    const urlTeste = `${base}/contasReceber`;
-    try {
-      const response = await fetch(urlTeste, {
-        method: "GET",
-        headers: { "Authorization": AUTH_KEY, "Accept": "application/json" }
-      });
-
-      if (response.status === 200) {
-        const data = await response.json();
-        return res.status(200).json({ 
-            msg: "SUCESSO encontrado!", 
-            url_correta: base, 
-            dados: data 
-        });
+  try {
+    // Requisição direta ao endpoint padrão indicado na sua documentação
+    const response = await fetch(`${BASE_URL}/contasReceber`, {
+      method: "GET",
+      headers: {
+        "Authorization": AUTH_KEY,
+        "Accept": "application/json"
       }
-      logTentativas.push(`${urlTeste} -> Erro ${response.status}`);
-    } catch (e) {
-      logTentativas.push(`${urlTeste} -> Falha de rede`);
-    }
+    });
+
+    // Se o Nomus responder, repassamos o que ele enviou (seja erro ou dados)
+    const data = await response.json();
+    return res.status(response.status).json(data);
+
+  } catch (error) {
+    // Erro caso o servidor da Vercel não consiga nem "enxergar" o da Nomus
+    return res.status(500).json({ 
+      error: "Falha de conexão física", 
+      message: error.message 
+    });
   }
-
-  return res.status(404).json({ 
-    error: "Nenhum caminho funcionou", 
-    detalhes: logTentativas 
-  });
 }
-
-
-
-
 

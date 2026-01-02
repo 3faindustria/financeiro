@@ -111,7 +111,7 @@ function renderizarTabela(lista, tipo) {
     const corpo = document.getElementById("tabela-corpo");
     corpo.innerHTML = "";
     
-    // Ordenação por data de vencimento
+    // Ordenação por vencimento antes de numerar
     lista.sort((a, b) => {
         const c = (s) => { 
             const p = (s || "01/01/1900").split('/'); 
@@ -124,8 +124,8 @@ function renderizarTabela(lista, tipo) {
     const hoje = new Date();
     hoje.setHours(0,0,0,0);
 
-    lista.forEach(item => {
-        // Tratamento de valores negativos (Contas a Pagar) e nomes de campos
+    // O segundo parâmetro do forEach é o índice (index)
+    lista.forEach((item, index) => {
         const vP = Math.abs(stringParaNumero(item.valorReceber || item.valorPagar));
         const vR = Math.abs(stringParaNumero(item.valorRecebido || item.valorPago));
         const vSaldo = vP - vR;
@@ -135,8 +135,6 @@ function renderizarTabela(lista, tipo) {
 
         const pD = (item.dataVencimento || "01/01/1900").split('/');
         const dVenc = new Date(pD[2], pD[1]-1, pD[0]);
-        
-        // Regra de Vencidos: Data anterior a hoje e saldo em aberto
         const vencido = dVenc < hoje && vSaldo > 0.10;
 
         if (vencido) tAtrasado += vSaldo;
@@ -144,10 +142,11 @@ function renderizarTabela(lista, tipo) {
         const tr = document.createElement("tr");
         if (vencido) tr.classList.add("linha-vencida");
 
-        // Prioriza o nome descritivo da classificação financeira
         const descClass = item.nomeClassificacaoFinanceira || item.nomeClassificacao || item.classificacao || '-';
 
+        // index + 1 para a contagem começar em 1 e não em 0
         tr.innerHTML = `
+            <td style="color: #666; font-size: 0.85em;">${index + 1}</td>
             <td>${descClass}</td>
             <td>${item.nomePessoa || '-'}</td>
             <td style="font-weight:bold">
@@ -161,13 +160,12 @@ function renderizarTabela(lista, tipo) {
         corpo.appendChild(tr);
     });
 
-    // Atualização dos cards de resumo
+    // Atualiza os resumos (Dashboard)
     document.getElementById("resumo-previsto").innerText = formatarMoeda(tPrev);
     document.getElementById("resumo-realizado").innerText = formatarMoeda(tReal);
-    
-    const resSaldo = document.getElementById("resumo-saldo");
-    resSaldo.innerText = formatarMoeda(tPrev - tReal);
-    resSaldo.style.color = tipo === "contasReceber" ? "#2e7d32" : "#cf1322";
-
+    document.getElementById("resumo-saldo").innerText = formatarMoeda(tPrev - tReal);
     document.getElementById("resumo-atrasado").innerText = formatarMoeda(tAtrasado);
+    
+    // Log extra para conferência
+    logDebug(`Grid atualizada com ${lista.length} itens numerados.`);
 }

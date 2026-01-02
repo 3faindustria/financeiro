@@ -22,8 +22,8 @@ export default async function handler(req, res) {
     // MONTAGEM DA URL: Query primeiro, Página depois.
     // Ex: .../contasPagar?query=dataVencimento>=...;pagina=0
     let urlFinal = `${BASE_URL}/${endpoint}?`;
-    if (queryStr) urlFinal += `query=${queryStr};`;
-    urlFinal += `pagina=${pagina}`;
+    if (queryStr) urlFinal += `query=${queryStr}`;
+    urlFinal += `;pagina=${pagina}`;
 
     const response = await fetch(urlFinal, {
       method: "GET",
@@ -49,5 +49,6 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: error.message });
   }
 }
+
 
 

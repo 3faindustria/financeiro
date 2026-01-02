@@ -5,7 +5,7 @@ export default async function handler(req, res) {
 
   try {
     // Requisição direta ao endpoint padrão indicado na sua documentação
-    const response = await fetch(`${BASE_URL}/contasReceber`, {
+    const response = await fetch(`${BASE_URL}/contasPagar`, {
       method: "GET",
       headers: {
         "Authorization": AUTH_KEY,
@@ -25,4 +25,5 @@ export default async function handler(req, res) {
     });
   }
 }
+
 

@@ -1,33 +1,30 @@
 export default async function handler(req, res) {
+  // O replace remove barras extras caso você tenha digitado na Vercel por engano
+  const BASE_URL = process.env.NOMUS_BASE_URL.replace(/\/$/, ""); 
   const AUTH_KEY = process.env.NOMUS_AUTH_KEY;
   const { endpoint, params } = req.query;
 
-  // Lista de URLs prováveis que o Nomus usa
-  const basesParaTestar = [
-    `https://3fa.nomus.com.br/erp/rest`,
-    `https://3fa.nomus.com.br/nomus-erp/rest`,
-    `https://3fa.nomus.com.br/rest`
-  ];
+  const urlFinal = `${BASE_URL}/${endpoint}?${params || ""}`;
 
-  for (let base of basesParaTestar) {
-    const urlFinal = `${base}/${endpoint}?${params || ""}`;
-    try {
-      const response = await fetch(urlFinal, {
-        headers: { "Authorization": AUTH_KEY, "Accept": "application/json" }
-      });
-
-      if (response.status === 200) {
-        const data = await response.json();
-        return res.status(200).json(data);
+  try {
+    const response = await fetch(urlFinal, {
+      method: "GET",
+      headers: {
+        "Authorization": AUTH_KEY,
+        "Accept": "application/json"
       }
-      
-      console.log(`Tentativa em ${base} resultou em: ${response.status}`);
-    } catch (e) {
-      continue;
-    }
-  }
+    });
 
-  return res.status(404).json({ 
-    error: "O Nomus recusou todas as variações de URL. Verifique o caminho correto no seu suporte TI." 
-  });
+    if (!response.ok) {
+      return res.status(response.status).json({ 
+        error: `Erro no servidor Nomus (${response.status})`,
+        url_tentada: urlFinal 
+      });
+    }
+
+    const data = await response.json();
+    return res.status(200).json(data);
+  } catch (error) {
+    return res.status(500).json({ error: "Falha na conexão com o servidor" });
+  }
 }

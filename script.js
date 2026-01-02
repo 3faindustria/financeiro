@@ -10,21 +10,25 @@ function stringParaNumero(str) {
 async function buscarDados() {
     const corpo = document.getElementById("tabela-corpo");
     const tipo = document.getElementById("filtro-tipo").value;
+    const dataInicio = document.getElementById("data-inicio").value;
+    const dataFim = document.getElementById("data-fim").value;
     
     corpo.innerHTML = '<tr><td colspan="6" style="text-align:center">Buscando no Nomus...</td></tr>';
 
     try {
-        const response = await fetch(`/api/consultar?endpoint=${tipo}`);
+        let url = `/api/consultar?endpoint=${tipo}`;
+        if(dataInicio) url += `&dataVencimentoDe=${dataInicio}`;
+        if(dataFim) url += `&dataVencimentoAte=${dataFim}`;
+
+        const response = await fetch(url);
         const dados = await response.json();
         let lista = Array.isArray(dados) ? dados : (dados.content || []);
 
         // Ordenação
         lista.sort((a, b) => {
-            const extrairData = (dStr) => {
-                const p = dStr.trim().split('/');
-                return new Date(p[2], p[1] - 1, p[0]);
-            };
-            return extrairData(a.dataVencimento) - extrairData(b.dataVencimento);
+            const pA = a.dataVencimento.split('/');
+            const pB = b.dataVencimento.split('/');
+            return new Date(pA[2], pA[1]-1, pA[0]) - new Date(pB[2], pB[1]-1, pB[0]);
         });
 
         let totalPrevisto = 0, totalRealizado = 0;
@@ -33,42 +37,40 @@ async function buscarDados() {
         hoje.setHours(0,0,0,0);
 
         lista.forEach(item => {
-    // 1. Identifica os valores independente do endpoint (Receber ou Pagar)
-    const vPrev = stringParaNumero(item.valorReceber || item.valorPagar);
-    const vReal = stringParaNumero(item.valorRecebido || item.valorPago);
-    const vSaldo = stringParaNumero(item.saldoReceber || item.saldoPagar || "0");
+            // CAPTURA DINÂMICA: Tenta ler campo de 'Receber' ou 'Pagar'
+            const vPrevStr = item.valorReceber || item.valorPagar || "0";
+            const vRealStr = item.valorRecebido || item.valorPago || "0";
+            const vSaldoStr = item.saldoReceber || item.saldoPagar || "0";
 
-    totalPrevisto += vPrev; 
-    totalRealizado += vReal;
+            const vPrev = stringParaNumero(vPrevStr);
+            const vReal = stringParaNumero(vRealStr);
+            const vSaldo = stringParaNumero(vSaldoStr);
 
-    // 2. Trata a Data
-    const partes = item.dataVencimento.split('/');
-    const dataVenc = new Date(partes[2], partes[1] - 1, partes[0]);
-    const hoje = new Date();
-    hoje.setHours(0,0,0,0);
+            totalPrevisto += vPrev; 
+            totalRealizado += vReal;
 
-    // 3. REGRA DE DESTAQUE CORRIGIDA:
-    // Só destaca se: (Data Vencimento < Hoje) E (Ainda houver saldo a pagar/receber)
-    const estaVencido = dataVenc < hoje && vSaldo > 0.05; 
+            const partes = item.dataVencimento.split('/');
+            const dataVenc = new Date(partes[2], partes[1] - 1, partes[0]);
+            
+            // REGRA: Vencido se Data < Hoje E Saldo ainda existe
+            const estaVencido = dataVenc < hoje && vSaldo > 0.01;
 
-    const tr = document.createElement("tr");
-    if (estaVencido) {
-        tr.classList.add("linha-vencida");
-    }
+            const tr = document.createElement("tr");
+            if (estaVencido) tr.classList.add("linha-vencida");
 
-    tr.innerHTML = `
-        <td>${item.classificacao || '-'}</td>
-        <td>${item.nomePessoa || '-'}</td>
-        <td style="font-weight: bold;">
-            ${item.dataVencimento}
-            ${estaVencido ? '<span class="atraso-badge">VENCIDO</span>' : ''}
-        </td>
-        <td>${item.descricaoLancamento || '-'}</td>
-        <td>${formatarMoeda(vPrev)}</td>
-        <td>${formatarMoeda(vReal)}</td>
-    `;
-    corpo.appendChild(tr);
-});
+            tr.innerHTML = `
+                <td>${item.classificacao || '-'}</td>
+                <td>${item.nomePessoa || '-'}</td>
+                <td style="font-weight: bold;">
+                    ${item.dataVencimento}
+                    ${estaVencido ? '<span class="atraso-badge">VENCIDO</span>' : ''}
+                </td>
+                <td>${item.descricaoLancamento || '-'}</td>
+                <td>${formatarMoeda(vPrev)}</td>
+                <td>${formatarMoeda(vReal)}</td>
+            `;
+            corpo.appendChild(tr);
+        });
 
         document.getElementById("resumo-previsto").innerText = formatarMoeda(totalPrevisto);
         document.getElementById("resumo-realizado").innerText = formatarMoeda(totalRealizado);

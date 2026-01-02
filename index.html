@@ -21,14 +21,28 @@
         </select>
     </div>
     <div>
-        <strong>Vencimento De:</strong>
+        <strong>De:</strong>
         <input type="date" id="data-inicio">
     </div>
     <div>
         <strong>Até:</strong>
         <input type="date" id="data-fim">
     </div>
-    <button onclick="buscarDados()">Consultar Financeiro</button>
+
+    <div>
+        <strong>Classificação:</strong>
+        <select id="filtro-classificacao">
+            <option value="">Todas</option>
+        </select>
+    </div>
+    <div>
+        <strong>Pessoa/Empresa:</strong>
+        <select id="filtro-pessoa">
+            <option value="">Todas</option>
+        </select>
+    </div>
+
+    <button onclick="buscarDados()">Consultar Nomus</button>
 </div>
 
 <div class="summary-box">

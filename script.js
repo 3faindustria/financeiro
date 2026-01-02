@@ -18,19 +18,26 @@ async function buscarDados() {
     const dFim = document.getElementById("data-fim").value;
     
     corpo.innerHTML = '<tr><td colspan="7" style="text-align:center">Consultando Nomus...</td></tr>';
-    logDebug(`--- Iniciando Consulta Estável ---`);
+    
+    // Limpa logs antigos e inicia novo log
+    logDebug(`--- Nova Consulta Iniciada ---`);
 
     try {
         const urlLocal = `/api/consultar?endpoint=${tipo}&dataInicio=${dInicio}&dataFim=${dFim}`;
+        
         const response = await fetch(urlLocal);
         const resultado = await response.json();
         
-        if (resultado.urlGerada) logDebug(`URL: ${resultado.urlGerada}`);
+        // EXIBE A URL GERADA NO LOG PRETO
+        if (resultado.urlGerada) {
+            logDebug(`URL GERADA: ${resultado.urlGerada}`);
+        } else {
+            logDebug(`AVISO: A URL gerada não foi retornada pelo servidor.`);
+        }
 
         const listaBruta = resultado.content || [];
         const idsVistos = new Set();
         
-        // Remove duplicados
         dadosGlobais = listaBruta.filter(item => {
             const idUnico = item.id || item.codigo || JSON.stringify(item); 
             if (idsVistos.has(idUnico)) return false;
@@ -38,14 +45,14 @@ async function buscarDados() {
             return true;
         });
 
-        logDebug(`Carregados ${dadosGlobais.length} registros únicos.`);
+        logDebug(`Sucesso: ${dadosGlobais.length} registros únicos carregados.`);
 
         preencherFiltrosDinâmicos(dadosGlobais);
         aplicarFiltrosSecundarios();
 
     } catch (error) {
-        logDebug(`ERRO: ${error.message}`);
-        corpo.innerHTML = '<tr><td colspan="7" style="text-align:center; color:red">Erro ao carregar dados.</td></tr>';
+        logDebug(`ERRO CRÍTICO: ${error.message}`);
+        corpo.innerHTML = '<tr><td colspan="7" style="text-align:center; color:red">Erro na consulta.</td></tr>';
     }
 }
 

@@ -75,47 +75,55 @@
     }
 
     async function buscarDados() {
-        const tipo = document.getElementById("filtro-tipo").value;
-        const corpo = document.getElementById("tabela-corpo");
-        corpo.innerHTML = '<tr><td colspan="6" style="text-align:center">Buscando no Nomus...</td></tr>';
+    const tipo = document.getElementById("filtro-tipo").value;
+    const corpo = document.getElementById("tabela-corpo");
+    corpo.innerHTML = '<tr><td colspan="6" style="text-align:center">Buscando no Nomus...</td></tr>';
 
-        try {
-            const response = await fetch(`/api/consultar?endpoint=${tipo}`);
-            const dados = await response.json();
-            const lista = Array.isArray(dados) ? dados : (dados.content || []);
+    try {
+        const response = await fetch(`/api/consultar?endpoint=${tipo}`);
+        const dados = await response.json();
+        let lista = Array.isArray(dados) ? dados : (dados.content || []);
 
-            let totalPrevisto = 0;
-            let totalRealizado = 0;
-            corpo.innerHTML = "";
+        // --- LÓGICA DE ORDENAÇÃO POR VENCIMENTO ---
+        lista.sort((a, b) => {
+            // Converte "30/12/2025" para "2025-12-30" para comparação correta
+            const dataA = a.dataVencimento.split('/').reverse().join('-');
+            const dataB = b.dataVencimento.split('/').reverse().join('-');
+            return new Date(dataA) - new Date(dataB);
+        });
+        // ------------------------------------------
 
-            lista.forEach(item => {
-                // Identifica se é pagar ou receber para pegar a propriedade correta do JSON
-                const vPrev = stringParaNumero(item.valorReceber || item.valorPagar);
-                const vReal = stringParaNumero(item.valorRecebido || item.valorPago);
-                
-                totalPrevisto += vPrev;
-                totalRealizado += vReal;
+        let totalPrevisto = 0;
+        let totalRealizado = 0;
+        corpo.innerHTML = "";
 
-                const tr = document.createElement("tr");
-                tr.innerHTML = `
-                    <td>${item.classificacao}</td>
-                    <td>${item.nomePessoa}</td>
-                    <td>${item.dataVencimento}</td>
-                    <td>${item.descricaoLancamento}</td>
-                    <td>${formatarMoeda(vPrev)}</td>
-                    <td>${formatarMoeda(vReal)}</td>
-                `;
-                corpo.appendChild(tr);
-            });
+        lista.forEach(item => {
+            const vPrev = stringParaNumero(item.valorReceber || item.valorPagar);
+            const vReal = stringParaNumero(item.valorRecebido || item.valorPago);
+            
+            totalPrevisto += vPrev;
+            totalRealizado += vReal;
 
-            // Atualiza Resumo
-            document.getElementById("resumo-previsto").innerText = formatarMoeda(totalPrevisto);
-            document.getElementById("resumo-realizado").innerText = formatarMoeda(totalRealizado);
-            document.getElementById("resumo-saldo").innerText = formatarMoeda(totalPrevisto - totalRealizado);
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${item.classificacao}</td>
+                <td>${item.nomePessoa}</td>
+                <td style="font-weight: bold;">${item.dataVencimento}</td>
+                <td>${item.descricaoLancamento}</td>
+                <td>${formatarMoeda(vPrev)}</td>
+                <td>${formatarMoeda(vReal)}</td>
+            `;
+            corpo.appendChild(tr);
+        });
 
-        } catch (error) {
-            corpo.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red">Erro: ${error.message}</td></tr>`;
-        }
+        document.getElementById("resumo-previsto").innerText = formatarMoeda(totalPrevisto);
+        document.getElementById("resumo-realizado").innerText = formatarMoeda(totalRealizado);
+        document.getElementById("resumo-saldo").innerText = formatarMoeda(totalPrevisto - totalRealizado);
+
+    } catch (error) {
+        corpo.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red">Erro: ${error.message}</td></tr>`;
+    }
+}
     }
 </script>
 </body>

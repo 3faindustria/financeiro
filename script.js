@@ -1,12 +1,19 @@
+function logDebug(mensagem) {
+    const logElem = document.getElementById("debug-log");
+    logElem.style.display = "block";
+    const span = document.createElement("div");
+    span.innerText = `[${new Date().toLocaleTimeString()}] ${mensagem}`;
+    logElem.appendChild(span);
+    logElem.scrollTop = logElem.scrollHeight;
+}
+
 function formatarMoeda(valor) {
-    // Exibe o valor absoluto formatado como Real Brasileiro
     return Math.abs(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
 function stringParaNumero(str) {
     if (typeof str === 'number') return str;
     if (!str || typeof str !== 'string') return 0;
-    // Remove R$, espaços e pontos, mantendo o sinal de menos e a vírgula decimal
     let limpeza = str.replace(/[^\d,-]/g, '').replace(',', '.');
     return parseFloat(limpeza) || 0;
 }
@@ -17,21 +24,31 @@ async function buscarDados() {
     const dInicio = document.getElementById("data-inicio").value;
     const dFim = document.getElementById("data-fim").value;
     
-    corpo.innerHTML = '<tr><td colspan="6" style="text-align:center">Buscando todas as páginas no Nomus...</td></tr>';
+    corpo.innerHTML = '<tr><td colspan="6" style="text-align:center">Buscando no Nomus...</td></tr>';
+    logDebug(`Iniciando busca para: ${tipo}`);
 
     let todasAsContas = [];
     let paginaAtual = 0;
     let continuaBuscando = true;
 
     try {
-        // Loop para vencer o limite de 50 registros 
         while (continuaBuscando) {
+            // Monta a URL para o log 
             const url = `/api/consultar?endpoint=${tipo}&dataInicio=${dInicio}&dataFim=${dFim}&pagina=${paginaAtual}`;
+            logDebug(`Consultando URL: ${url}`);
+
             const response = await fetch(url);
-            const dados = await response.json();
             
+            if (!response.ok) {
+                logDebug(`ERRO na resposta: ${response.status}`);
+                throw new Error(`Erro HTTP: ${response.status}`);
+            }
+
+            const dados = await response.json();
             const listaDaPagina = Array.isArray(dados) ? dados : (dados.content || []);
             
+            logDebug(`Página ${paginaAtual}: ${listaDaPagina.length} registros encontrados.`);
+
             if (listaDaPagina.length > 0) {
                 todasAsContas = todasAsContas.concat(listaDaPagina);
                 paginaAtual++;
@@ -41,13 +58,16 @@ async function buscarDados() {
                 continuaBuscando = false;
             }
             
-            // Segurança para não entrar em loop infinito
-            if (paginaAtual > 20) continuaBuscando = false; 
+            if (paginaAtual > 20) {
+                logDebug("Limite de segurança de 20 páginas atingido.");
+                continuaBuscando = false;
+            }
         }
 
         renderizarTabela(todasAsContas, tipo);
 
     } catch (error) {
+        logDebug(`FALHA CRÍTICA: ${error.message}`);
         corpo.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red">Erro: ${error.message}</td></tr>`;
     }
 }
@@ -56,7 +76,6 @@ function renderizarTabela(lista, tipo) {
     const corpo = document.getElementById("tabela-corpo");
     corpo.innerHTML = "";
     
-    // Ordenação por data 
     lista.sort((a, b) => {
         const c = (s) => { const p = (s || "01/01/1900").split('/'); return new Date(p[2], p[1]-1, p[0]); };
         return c(a.dataVencimento) - c(b.dataVencimento);
@@ -67,7 +86,6 @@ function renderizarTabela(lista, tipo) {
     hoje.setHours(0,0,0,0);
 
     lista.forEach(item => {
-        // Tratamento de valores negativos do Contas a Pagar [cite: 10, 12]
         const vP = Math.abs(stringParaNumero(item.valorReceber || item.valorPagar));
         const vR = Math.abs(stringParaNumero(item.valorRecebido || item.valorPago));
         const vSaldo = vP - vR;

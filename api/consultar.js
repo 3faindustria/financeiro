@@ -6,7 +6,8 @@ export default async function handler(req, res) {
 
   try {
     const urlFinal = `${BASE_URL}/${endpoint}?${params || ""}`;
-    
+    // api/consultar.js
+    console.log("URL de Destino:", `${BASE_URL}/${endpoint}?${params}`);
     const response = await fetch(urlFinal, {
       method: "GET",
       headers: {
@@ -35,4 +36,5 @@ export default async function handler(req, res) {
     });
   }
 }
+
 

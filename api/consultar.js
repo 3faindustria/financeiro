@@ -1,7 +1,9 @@
 export default async function handler(req, res) {
   const BASE_URL = "https://3fa.nomus.com.br/3fa/rest";
   const AUTH_KEY = process.env.NOMUS_AUTH_KEY;
-  const { endpoint, dataInicio, dataFim, pagina = 0 } = req.query;
+  const { endpoint, dataInicio, dataFim } = req.query;
+
+  if (!endpoint) return res.status(400).json({ error: "Endpoint não informado" });
 
   const formatarData = (dataISO) => {
     if (!dataISO) return null;
@@ -13,19 +15,12 @@ export default async function handler(req, res) {
     const dIni = formatarData(dataInicio);
     const dFim = formatarData(dataFim);
 
-    // Constrói a query de data
-    let queryStr = "";
+    let queryParams = "";
     if (dIni && dFim) {
-      queryStr = `dataVencimento>=${dIni};dataVencimento<=${dFim}`;
+      queryParams = `?query=dataVencimento>=${dIni};dataVencimento<=${dFim}`;
     }
 
-    // MONTAGEM DA URL: Query primeiro, Página depois.
-    // Ex: .../contasPagar?query=dataVencimento>=...;pagina=0
-    let urlFinal = `${BASE_URL}/${endpoint}?`;
-    if (queryStr) urlFinal += `query=${queryStr}`;
-    //urlFinal += `;pagina=${pagina}`;
-
-    urlFinal = `https://3fa.nomus.com.br/3fa/rest/contasPagar?pagina=0;query=dataVencimento>=01/01/2026;dataVencimento<=31/01/2026`;
+    const urlFinal = `${BASE_URL}/${endpoint}${queryParams}`;
 
     const response = await fetch(urlFinal, {
       method: "GET",
@@ -34,12 +29,6 @@ export default async function handler(req, res) {
         "Accept": "application/json"
       }
     });
-
-    // Se o Nomus retornar erro de sintaxe, capturamos aqui
-    if (!response.ok) {
-        const erroTexto = await response.text();
-        return res.status(response.status).json({ error: erroTexto, urlGerada: urlFinal });
-    }
 
     const data = await response.json();
     
@@ -51,11 +40,3 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: error.message });
   }
 }
-
-
-
-
-
-
-
-

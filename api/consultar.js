@@ -1,13 +1,14 @@
+// api/consultar.js
 export default async function handler(req, res) {
-  const BASE_URL = process.env.NOMUS_BASE_URL;
+  // Limpa possíveis barras no final da URL configurada
+  const BASE_URL = process.env.NOMUS_BASE_URL.replace(/\/$/, ""); 
   const AUTH_KEY = process.env.NOMUS_AUTH_KEY;
-
   const { endpoint, params } = req.query;
 
+  // Monta a URL garantindo uma única barra entre o base e o endpoint
+  const urlFinal = `${BASE_URL}/${endpoint}?${params || ""}`;
+
   try {
-    const urlFinal = `${BASE_URL}/${endpoint}?${params || ""}`;
-    // api/consultar.js
-    console.log("URL de Destino:", `${BASE_URL}/${endpoint}?${params}`);
     const response = await fetch(urlFinal, {
       method: "GET",
       headers: {
@@ -16,25 +17,16 @@ export default async function handler(req, res) {
       }
     });
 
-    // Se a Nomus responder, mas com erro (ex: 401 ou 500)
     if (!response.ok) {
-      const textoErro = await response.text();
       return res.status(response.status).json({ 
-        error: `Nomus respondeu com erro ${response.status}`,
-        details: textoErro 
+        error: `Nomus recusou a URL: ${urlFinal}`,
+        status: response.status 
       });
     }
 
     const data = await response.json();
     return res.status(200).json(data);
-
   } catch (error) {
-    // Se nem sequer conseguir chegar no servidor da Nomus
-    return res.status(500).json({ 
-      error: "Falha física na conexão", 
-      message: error.message 
-    });
+    return res.status(500).json({ error: "Erro de conexão" });
   }
 }
-
-

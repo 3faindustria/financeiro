@@ -45,9 +45,9 @@ async function buscarDados() {
 
     try {
         while (continuaBuscando) {
-            const urlLocal = `/api/consultar?endpoint=${tipo};dataVencimento=${dInicio}/dataVencimento=${dFim};pagina=${paginaAtual}`;
-            const response = await fetch(urlLocal);
-            const resultado = await response.json();
+            //const urlLocal = `/api/consultar?endpoint=${tipo};dataVencimento=${dInicio}/dataVencimento=${dFim};pagina=${paginaAtual}`;
+            //const response = await fetch(urlLocal);
+            //const resultado = await response.json();
             
             if (resultado.error) {
                 logDebug(`ERRO NO NOMUS: ${resultado.error}`);

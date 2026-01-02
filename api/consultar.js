@@ -23,7 +23,9 @@ export default async function handler(req, res) {
     // Ex: .../contasPagar?query=dataVencimento>=...;pagina=0
     let urlFinal = `${BASE_URL}/${endpoint}?`;
     if (queryStr) urlFinal += `query=${queryStr}`;
-    urlFinal += `;pagina=${pagina}`;
+    //urlFinal += `;pagina=${pagina}`;
+
+    urlFinal += `3fa/rest/contasPagar?pagina=0&query=dataVencimento>=01/01/2026;dataVencimento<=31/01/2026`;
 
     const response = await fetch(urlFinal, {
       method: "GET",
@@ -49,6 +51,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: error.message });
   }
 }
+
 
 
 

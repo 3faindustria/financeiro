@@ -64,76 +64,83 @@
     </tbody>
 </table>
 
-<script>
-    function formatarMoeda(valor) {
-        return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+// Funções de utilidade (Devem estar no topo)
+function formatarMoeda(valor) {
+    return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+function stringParaNumero(str) {
+    if (!str || typeof str !== 'string') return 0;
+    // Remove pontos de milhar e troca vírgula por ponto
+    return parseFloat(str.replace(/\./g, '').replace(',', '.')) || 0;
+}
+
+async function buscarDados() {
+    const filtroElemento = document.getElementById("filtro-tipo");
+    const corpo = document.getElementById("tabela-corpo");
+    
+    if (!filtroElemento || !corpo) {
+        alert("Erro técnico: Elementos da página não encontrados.");
+        return;
     }
 
-    function stringParaNumero(str) {
-        if (!str) return 0;
-        return parseFloat(str.replace(/\./g, '').replace(',', '.'));
-    }
+    const tipo = filtroElemento.value;
+    corpo.innerHTML = '<tr><td colspan="6" style="text-align:center">Buscando no Nomus...</td></tr>';
 
-    async function buscarDados() {
-        const tipo = document.getElementById("filtro-tipo").value;
-        const corpo = document.getElementById("tabela-corpo");
-        corpo.innerHTML = '<tr><td colspan="6" style="text-align:center">Buscando no Nomus...</td></tr>';
-    
-        try {
-            const response = await fetch(`/api/consultar?endpoint=${tipo}`);
-            const dados = await response.json();
-            let lista = Array.isArray(dados) ? dados : (dados.content || []);
-    
-            // 1. Função de conversão robusta (fora do sort)
-            const paraDataSobs = (str) => {
-                if (!str || typeof str !== 'string') return new Date(0);
-                const partes = str.trim().split('/');
-                if (partes.length !== 3) return new Date(0);
-                // Retorna objeto de data puro: ano, mes(0-11), dia
-                return new Date(partes[2], partes[1] - 1, partes[0]);
+    try {
+        const response = await fetch(`/api/consultar?endpoint=${tipo}`);
+        if (!response.ok) throw new Error(`Erro no servidor: ${response.status}`);
+        
+        const dados = await response.json();
+        let lista = Array.isArray(dados) ? dados : (dados.content || []);
+
+        // --- ORDENAÇÃO SEGURA ---
+        lista.sort((a, b) => {
+            const extrairData = (item) => {
+                const d = item.dataVencimento;
+                if (!d || typeof d !== 'string') return new Date(0);
+                const p = d.trim().split('/');
+                return p.length === 3 ? new Date(p[2], p[1] - 1, p[0]) : new Date(0);
             };
-    
-            // 2. Ordenação
-            lista.sort((a, b) => paraDataSobs(a.dataVencimento) - paraDataSobs(b.dataVencimento));
-    
-            let totalPrevisto = 0;
-            let totalRealizado = 0;
-            corpo.innerHTML = "";
-    
-            if (lista.length === 0) {
-                corpo.innerHTML = '<tr><td colspan="6" style="text-align:center">Nenhum dado encontrado.</td></tr>';
-                return;
-            }
-    
+            return extrairData(a) - extrairData(b);
+        });
+
+        let totalPrevisto = 0;
+        let totalRealizado = 0;
+        corpo.innerHTML = "";
+
+        if (lista.length === 0) {
+            corpo.innerHTML = '<tr><td colspan="6" style="text-align:center">Nenhum dado encontrado para este filtro.</td></tr>';
+        } else {
             lista.forEach(item => {
                 const vPrev = stringParaNumero(item.valorReceber || item.valorPagar);
                 const vReal = stringParaNumero(item.valorRecebido || item.valorPago);
                 
                 totalPrevisto += vPrev;
                 totalRealizado += vReal;
-    
+
                 const tr = document.createElement("tr");
                 tr.innerHTML = `
                     <td>${item.classificacao || '-'}</td>
                     <td>${item.nomePessoa || '-'}</td>
-                    <td style="font-weight: bold;">${item.dataVencimento || '-'}</td>
+                    <td style="font-weight: bold; color: #1976d2;">${item.dataVencimento || '-'}</td>
                     <td>${item.descricaoLancamento || '-'}</td>
                     <td>${formatarMoeda(vPrev)}</td>
                     <td>${formatarMoeda(vReal)}</td>
                 `;
                 corpo.appendChild(tr);
             });
-    
-            // Atualiza Resumo
-            document.getElementById("resumo-previsto").innerText = formatarMoeda(totalPrevisto);
-            document.getElementById("resumo-realizado").innerText = formatarMoeda(totalRealizado);
-            document.getElementById("resumo-saldo").innerText = formatarMoeda(totalPrevisto - totalRealizado);
-    
-        } catch (error) {
-            console.error("Erro completo:", error);
-            corpo.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red">Erro ao processar dados. Verifique o console.</td></tr>`;
         }
+
+        // Atualiza Resumo Financeiro
+        document.getElementById("resumo-previsto").innerText = formatarMoeda(totalPrevisto);
+        document.getElementById("resumo-realizado").innerText = formatarMoeda(totalRealizado);
+        document.getElementById("resumo-saldo").innerText = formatarMoeda(totalPrevisto - totalRealizado);
+
+    } catch (error) {
+        console.error("Erro na consulta:", error);
+        corpo.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red">Erro na comunicação: ${error.message}</td></tr>`;
     }
-</script>
+}
 </body>
 </html>

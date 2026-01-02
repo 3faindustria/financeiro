@@ -75,55 +75,54 @@
     }
 
     async function buscarDados() {
-    const tipo = document.getElementById("filtro-tipo").value;
-    const corpo = document.getElementById("tabela-corpo");
-    corpo.innerHTML = '<tr><td colspan="6" style="text-align:center">Buscando no Nomus...</td></tr>';
-
-    try {
-        const response = await fetch(`/api/consultar?endpoint=${tipo}`);
-        const dados = await response.json();
-        let lista = Array.isArray(dados) ? dados : (dados.content || []);
-
-        // --- LÓGICA DE ORDENAÇÃO POR VENCIMENTO ---
-        lista.sort((a, b) => {
-            // Converte "30/12/2025" para "2025-12-30" para comparação correta
-            const dataA = a.dataVencimento.split('/').reverse().join('-');
-            const dataB = b.dataVencimento.split('/').reverse().join('-');
-            return new Date(dataA) - new Date(dataB);
-        });
-        // ------------------------------------------
-
-        let totalPrevisto = 0;
-        let totalRealizado = 0;
-        corpo.innerHTML = "";
-
-        lista.forEach(item => {
-            const vPrev = stringParaNumero(item.valorReceber || item.valorPagar);
-            const vReal = stringParaNumero(item.valorRecebido || item.valorPago);
-            
-            totalPrevisto += vPrev;
-            totalRealizado += vReal;
-
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-                <td>${item.classificacao}</td>
-                <td>${item.nomePessoa}</td>
-                <td style="font-weight: bold;">${item.dataVencimento}</td>
-                <td>${item.descricaoLancamento}</td>
-                <td>${formatarMoeda(vPrev)}</td>
-                <td>${formatarMoeda(vReal)}</td>
-            `;
-            corpo.appendChild(tr);
-        });
-
-        document.getElementById("resumo-previsto").innerText = formatarMoeda(totalPrevisto);
-        document.getElementById("resumo-realizado").innerText = formatarMoeda(totalRealizado);
-        document.getElementById("resumo-saldo").innerText = formatarMoeda(totalPrevisto - totalRealizado);
-
-    } catch (error) {
-        corpo.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red">Erro: ${error.message}</td></tr>`;
-    }
-}
+        const tipo = document.getElementById("filtro-tipo").value;
+        const corpo = document.getElementById("tabela-corpo");
+        corpo.innerHTML = '<tr><td colspan="6" style="text-align:center">Buscando no Nomus...</td></tr>';
+    
+        try {
+            const response = await fetch(`/api/consultar?endpoint=${tipo}`);
+            const dados = await response.json();
+            let lista = Array.isArray(dados) ? dados : (dados.content || []);
+    
+            // --- LÓGICA DE ORDENAÇÃO POR VENCIMENTO ---
+            lista.sort((a, b) => {
+                // Converte "30/12/2025" para "2025-12-30" para comparação correta
+                const dataA = a.dataVencimento.split('/').reverse().join('-');
+                const dataB = b.dataVencimento.split('/').reverse().join('-');
+                return new Date(dataA) - new Date(dataB);
+            });
+            // ------------------------------------------
+    
+            let totalPrevisto = 0;
+            let totalRealizado = 0;
+            corpo.innerHTML = "";
+    
+            lista.forEach(item => {
+                const vPrev = stringParaNumero(item.valorReceber || item.valorPagar);
+                const vReal = stringParaNumero(item.valorRecebido || item.valorPago);
+                
+                totalPrevisto += vPrev;
+                totalRealizado += vReal;
+    
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td>${item.classificacao}</td>
+                    <td>${item.nomePessoa}</td>
+                    <td style="font-weight: bold;">${item.dataVencimento}</td>
+                    <td>${item.descricaoLancamento}</td>
+                    <td>${formatarMoeda(vPrev)}</td>
+                    <td>${formatarMoeda(vReal)}</td>
+                `;
+                corpo.appendChild(tr);
+            });
+    
+            document.getElementById("resumo-previsto").innerText = formatarMoeda(totalPrevisto);
+            document.getElementById("resumo-realizado").innerText = formatarMoeda(totalRealizado);
+            document.getElementById("resumo-saldo").innerText = formatarMoeda(totalPrevisto - totalRealizado);
+    
+        } catch (error) {
+            corpo.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red">Erro: ${error.message}</td></tr>`;
+        }
     }
 </script>
 </body>

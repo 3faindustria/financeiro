@@ -8,23 +8,33 @@
 <body>
 
 <div class="filter-section">
-    <strong>Tipo:</strong>
-    <select id="filtro-tipo">
-        <option value="contasReceber">Contas a Receber</option>
-        <option value="contasPagar">Contas a Pagar</option>
-    </select>
-    <button onclick="buscarDados()">Consultar</button>
+    <div>
+        <strong>Tipo:</strong>
+        <select id="filtro-tipo">
+            <option value="contasReceber">Contas a Receber</option>
+            <option value="contasPagar">Contas a Pagar</option>
+        </select>
+    </div>
+    <div>
+        <strong>Vencimento De:</strong>
+        <input type="date" id="data-inicio">
+    </div>
+    <div>
+        <strong>Até:</strong>
+        <input type="date" id="data-fim">
+    </div>
+    <button onclick="buscarDados()">Consultar Financeiro</button>
 </div>
 
 <div class="summary-box">
     <div class="card">
-        <h3>Resumo da Seleção</h3>
+        <h3>Resumo do Período</h3>
         <div class="total-row"><span>Previsto:</span> <span id="resumo-previsto" class="highlight">R$ 0,00</span></div>
         <div class="total-row"><span>Realizado:</span> <span id="resumo-realizado" class="highlight">R$ 0,00</span></div>
         <div class="total-row"><span>Saldo em Aberto:</span> <span id="resumo-saldo">R$ 0,00</span></div>
-        <div class="total-row" style="margin-top: 15px; padding-top: 10px; border-top: 1px dashed #ccc;">
-            <strong style="color: #cf1322;">Total Atrasado:</strong> 
-            <strong id="resumo-atrasado" style="color: #cf1322;">R$ 0,00</strong>
+        <div class="total-row" style="margin-top:10px; padding-top:10px; border-top:1px dashed #ccc;">
+            <strong style="color:#cf1322">Total Atrasado:</strong>
+            <strong id="resumo-atrasado" style="color:#cf1322">R$ 0,00</strong>
         </div>
     </div>
 </div>

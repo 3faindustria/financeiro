@@ -1,142 +1,104 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <title>Consulta Financeira - Nomus</title>
-  <style>
-    body { font-family: Arial, sans-serif; background: #f4f6f8; margin: 20px; }
-    .filtros, .tabela, .debug { background: #fff; padding: 15px; border-radius: 6px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-    .filtros label { display: inline-block; width: 140px; margin-bottom: 8px; font-weight: bold; }
-    .filtros input, .filtros select { padding: 6px; width: 220px; margin-bottom: 8px; border: 1px solid #ccc; border-radius: 4px; }
-    button { padding: 10px 20px; background: #1976d2; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 12px 8px; border-bottom: 1px solid #ddd; text-align: left; }
-    th { background: #f0f0f0; }
-    .debug { background: #333; color: #0f0; font-family: monospace; font-size: 12px; height: 100px; overflow-y: auto; }
-    .pago { color: green; font-weight: bold; }
-    .aberto { color: orange; font-weight: bold; }
-  </style>
+    <meta charset="UTF-8">
+    <title>Painel Financeiro Nomus</title>
+    <style>
+        body { font-family: sans-serif; background: #f4f6f8; padding: 20px; }
+        .filtros, .tabela, .debug { background: #fff; padding: 15px; border-radius: 6px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .debug { background: #333; color: #0f0; font-family: monospace; font-size: 12px; height: 80px; overflow-y: auto; }
+        button { padding: 10px 20px; background: #1976d2; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px; border-bottom: 1px solid #ddd; text-align: left; }
+        .pago { color: green; font-weight: bold; }
+        .aberto { color: orange; font-weight: bold; }
+    </style>
 </head>
 <body>
 
-<h1>Consulta Financeira Nomus</h1>
+<h1>Consulta Financeira Segura</h1>
 
 <div class="filtros">
-  <label>Tipo:</label>
-  <select id="tipo">
-    <option value="contasReceber">Contas a Receber (Padrão 1)</option>
-    <option value="contas-receber">Contas a Receber (Padrão 2)</option>
-    <option value="contasPagar">Contas a Pagar (Padrão 1)</option>
-    <option value="contas-pagar">Contas a Pagar (Padrão 2)</option>
-  </select><br>
-
-  <label>Vencimento De:</label>
-  <input type="date" id="vencimentoDe">
-  <label style="width: auto; margin: 0 10px;">Até:</label>
-  <input type="date" id="vencimentoAte"><br>
-
-  <button onclick="consultar()">Consultar Agora</button>
+    <select id="tipo">
+        <option value="contasReceber">Contas a Receber</option>
+        <option value="contasPagar">Contas a Pagar</option>
+    </select>
+    <input type="date" id="vencimentoDe">
+    <input type="date" id="vencimentoAte">
+    <button onclick="consultar()">Consultar</button>
 </div>
 
-<div class="debug" id="log">Log do console: Aguardando consulta...</div>
+<div class="debug" id="log">Aguardando consulta...</div>
 
 <div class="tabela">
-  <table>
-    <thead>
-      <tr>
-        <th>Empresa</th>
-        <th>Pessoa</th>
-        <th>Vencimento</th>
-        <th>Valor</th>
-        <th>Status</th>
-      </tr>
-    </thead>
-    <tbody id="resultado">
-      <tr><td colspan="5">Inicie a consulta acima.</td></tr>
-    </tbody>
-  </table>
+    <table>
+        <thead>
+            <tr>
+                <th>Pessoa</th>
+                <th>Vencimento</th>
+                <th>Valor</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody id="resultado"></tbody>
+    </table>
 </div>
 
 <script>
-  const AUTH_KEY = "Basic aW50ZWdyYWRvcmVycDpIZVcxS2RaZEhEemxVdzc=";
-  const BASE_URL = "https://3fa.nomus.com.br/erp/rest";
-  
-  // Usando um proxy que costuma aceitar melhor Headers de Autenticação
-  const PROXY = "https://thingproxy.freeboard.io/fetch/";
-
-  function log(msg) {
-    const logDiv = document.getElementById("log");
-    logDiv.innerHTML += "<br>> " + msg;
-    logDiv.scrollTop = logDiv.scrollHeight;
-  }
-
-  async function consultar() {
-    const tbody = document.getElementById("resultado");
-    const logDiv = document.getElementById("log");
-    logDiv.innerHTML = "Iniciando consulta...";
-    tbody.innerHTML = '<tr><td colspan="5">Processando...</td></tr>';
-
-    const endpoint = document.getElementById("tipo").value;
-    const urlApi = `${BASE_URL}/${endpoint}`;
-    const urlFinal = PROXY + urlApi;
-
-    log(`Tentando acessar: ${urlApi}`);
-
-    try {
-      const response = await fetch(urlFinal, {
-        method: "GET",
-        headers: {
-          "Authorization": AUTH_KEY,
-          "Accept": "application/json"
-        }
-      });
-
-      log(`Status da Resposta: ${response.status}`);
-
-      if (!response.ok) {
-        if (response.status === 404) {
-          throw new Error("Endpoint não encontrado (404). Tente trocar o 'Tipo' no seletor.");
-        }
-        throw new Error(`Erro na API: ${response.status}`);
-      }
-
-      const dados = await response.json();
-      const lista = Array.isArray(dados) ? dados : (dados.content || []);
-      
-      log(`Sucesso! ${lista.length} registros encontrados.`);
-      renderizar(lista);
-
-    } catch (erro) {
-      log(`ERRO: ${erro.message}`);
-      tbody.innerHTML = `<tr><td colspan="5" style="color:red">Erro: ${erro.message}</td></tr>`;
-    }
-  }
-
-  function renderizar(lista) {
-    const tbody = document.getElementById("resultado");
-    tbody.innerHTML = "";
-
-    if (lista.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5">Nenhum dado retornado do servidor.</td></tr>';
-      return;
+    function log(msg) {
+        const logDiv = document.getElementById("log");
+        logDiv.innerHTML += "<br>> " + msg;
+        logDiv.scrollTop = logDiv.scrollHeight;
     }
 
-    lista.forEach(item => {
-      const status = item.dataBaixa ? "Pago" : "Em aberto";
-      const valor = item.valorReceber || item.valorPagar || 0;
-      
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${item.nomeEmpresa || "-"}</td>
-        <td>${item.nomePessoa || "-"}</td>
-        <td>${item.dataVencimento || "-"}</td>
-        <td>R$ ${Number(valor).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
-        <td class="${status === 'Pago' ? 'pago' : 'aberto'}">${status}</td>
-      `;
-      tbody.appendChild(tr);
-    });
-  }
+    async function consultar() {
+        const tbody = document.getElementById("resultado");
+        const endpoint = document.getElementById("tipo").value;
+        const logDiv = document.getElementById("log");
+        
+        logDiv.innerHTML = "Iniciando consulta via Vercel Serverless...";
+        tbody.innerHTML = "Carregando...";
+
+        const params = new URLSearchParams({
+            dataVencimentoDe: document.getElementById("vencimentoDe").value,
+            dataVencimentoAte: document.getElementById("vencimentoAte").value
+        }).toString();
+
+        // IMPORTANTE: Chamamos a nossa própria API interna, não o domínio da Nomus
+        const urlLocal = `/api/consultar?endpoint=${endpoint}&params=${encodeURIComponent(params)}`;
+
+        try {
+            log(`Chamando proxy interno: ${urlLocal}`);
+            const response = await fetch(urlLocal);
+            
+            if (!response.ok) throw new Error(`Erro ${response.status}: Falha no Proxy`);
+
+            const dados = await response.json();
+            const lista = Array.isArray(dados) ? dados : (dados.content || []);
+            
+            log(`Sucesso! Recebidos ${lista.length} itens.`);
+            renderizar(lista);
+        } catch (erro) {
+            log(`ERRO: ${erro.message}`);
+            tbody.innerHTML = "Erro ao carregar dados. Verifique os logs.";
+        }
+    }
+
+    function renderizar(lista) {
+        const tbody = document.getElementById("resultado");
+        tbody.innerHTML = "";
+        lista.forEach(item => {
+            const status = item.dataBaixa ? "Pago" : "Aberto";
+            const valor = item.valorReceber || item.valorPagar || 0;
+            tbody.innerHTML += `
+                <tr>
+                    <td>${item.nomePessoa || "-"}</td>
+                    <td>${item.dataVencimento || "-"}</td>
+                    <td>R$ ${valor.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                    <td class="${status === 'Pago' ? 'pago' : 'aberto'}">${status}</td>
+                </tr>`;
+        });
+    }
 </script>
-
 </body>
 </html>

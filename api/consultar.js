@@ -3,7 +3,7 @@ export default async function handler(req, res) {
   
   // Lista de caminhos base possíveis para o Nomus
   const caminhos = [
-    "https://3fa.nomus.com.br/3fa/rest",
+    "https://3fa.nomus.com.br/3fa/rest"
   ];
 
   let logTentativas = [];
@@ -35,5 +35,6 @@ export default async function handler(req, res) {
     detalhes: logTentativas 
   });
 }
+
 
 

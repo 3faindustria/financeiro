@@ -17,6 +17,21 @@
         select, button { padding: 10px; border-radius: 4px; border: 1px solid #ccc; font-size: 14px; }
         button { background: #1976d2; color: white; border: none; cursor: pointer; font-weight: bold; }
         button:hover { background: #1565c0; }
+
+        /* Estilo para destacar linhas vencidas */
+        .linha-vencida {
+            background-color: #fff1f0 !important; /* Fundo vermelho bem claro */
+            color: #cf1322 !important;            /* Texto vermelho escuro */
+        }
+        .atraso-badge {
+            background: #cf1322;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            margin-left: 5px;
+            vertical-align: middle;
+        }
     </style>
 </head>
 <body>
@@ -118,12 +133,28 @@ async function buscarDados() {
                 
                 totalPrevisto += vPrev;
                 totalRealizado += vReal;
-
+            
                 const tr = document.createElement("tr");
+            
+                // --- LÓGICA DE DESTAQUE DE VENCIDOS ---
+                const partes = item.dataVencimento.split('/');
+                const dataVenc = new Date(partes[2], partes[1] - 1, partes[0]);
+                const hoje = new Date();
+                hoje.setHours(0, 0, 0, 0); // Zera as horas para comparar apenas os dias
+            
+                // Se a data de vencimento for menor que hoje E não houve pagamento integral
+                if (dataVenc < hoje && vReal < vPrev) {
+                    tr.classList.add("linha-vencida");
+                }
+                // --------------------------------------
+            
                 tr.innerHTML = `
                     <td>${item.classificacao || '-'}</td>
                     <td>${item.nomePessoa || '-'}</td>
-                    <td style="font-weight: bold; color: #1976d2;">${item.dataVencimento || '-'}</td>
+                    <td style="font-weight: bold;">
+                        ${item.dataVencimento}
+                        ${dataVenc < hoje && vReal < vPrev ? '<span class="atraso-badge">VENCIDO</span>' : ''}
+                    </td>
                     <td>${item.descricaoLancamento || '-'}</td>
                     <td>${formatarMoeda(vPrev)}</td>
                     <td>${formatarMoeda(vReal)}</td>
